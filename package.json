@@ -1,0 +1,28 @@
+{
+  "name": "integrador",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "dev": "concurrently \"node server.js\" \"npm run dev --prefix client\"",
+    "build": "npm run build --prefix client",
+    "ingest": "node scripts/ingest_data.js",
+    "import:xlsb": "node scripts/import_pedidos_from_xlsb.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "better-sqlite3": "^12.6.2",
+    "cors": "^2.8.6",
+    "exceljs": "^4.4.0",
+    "express": "^5.2.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

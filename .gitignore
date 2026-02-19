@@ -19,11 +19,6 @@ Thumbs.db
 # Excel temp files
 ~$*
 
-# Source data files (large, not code)
-*.xlsb
-C-ESPACIOS_*.txt
-supercor_candidates.txt
-
 # Build output
 client/dist/
 

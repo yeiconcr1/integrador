@@ -14,7 +14,8 @@ const PORT = 3000;
 
 // Middleware
 app.use(cors());
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ─── DATABASE SETUP ──────────────────────────────────────────────────────────
@@ -222,10 +223,10 @@ app.get('/api/usuarios', authenticateToken, requireAdmin, (req, res) => {
 
 app.post('/api/usuarios', authenticateToken, requireAdmin, (req, res) => {
     const { email, password, nombre, rol } = req.body;
-    
+
     // Validaciones mejoradas
     const errors = [];
-    
+
     if (!email || !email.trim()) {
         errors.push('El email es requerido');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
@@ -233,7 +234,7 @@ app.post('/api/usuarios', authenticateToken, requireAdmin, (req, res) => {
     } else if (email.trim().length > 255) {
         errors.push('El email no puede exceder 255 caracteres');
     }
-    
+
     if (!password || password.trim().length === 0) {
         errors.push('La contraseña es requerida');
     } else if (password.length < 6) {
@@ -241,21 +242,21 @@ app.post('/api/usuarios', authenticateToken, requireAdmin, (req, res) => {
     } else if (password.length > 100) {
         errors.push('La contraseña no puede exceder 100 caracteres');
     }
-    
+
     if (!nombre || !nombre.trim()) {
         errors.push('El nombre es requerido');
     } else if (nombre.trim().length > 100) {
         errors.push('El nombre no puede exceder 100 caracteres');
     }
-    
+
     if (!rol || !['admin', 'disenador'].includes(rol)) {
         errors.push('El rol debe ser admin o diseñador');
     }
-    
+
     if (errors.length > 0) {
         return res.status(400).json({ error: 'Datos inválidos', details: errors });
     }
-    
+
     try {
         const hash = bcrypt.hashSync(password, 10);
         const info = db.prepare('INSERT INTO usuarios (email, password, nombre, rol) VALUES (?, ?, ?, ?)').run(email.trim(), hash, nombre.trim(), rol);
@@ -290,7 +291,10 @@ const storage = multer.diskStorage({
         cb(null, expected || file.originalname);
     }
 });
-const upload = multer({ storage });
+const upload = multer({
+    storage,
+    limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit max
+});
 
 // load script metadata from the same file the React app imports so
 // frontend and backend remain in sync.  the config file also includes
@@ -350,10 +354,10 @@ app.post('/api/admin/data/execute/:scriptId', authenticateToken, requireAdmin, (
 app.put('/api/usuarios/:id', authenticateToken, requireAdmin, (req, res) => {
     const { id } = req.params;
     const { email, password, nombre, rol } = req.body;
-    
+
     // Validaciones mejoradas
     const errors = [];
-    
+
     if (!email || !email.trim()) {
         errors.push('El email es requerido');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
@@ -361,7 +365,7 @@ app.put('/api/usuarios/:id', authenticateToken, requireAdmin, (req, res) => {
     } else if (email.trim().length > 255) {
         errors.push('El email no puede exceder 255 caracteres');
     }
-    
+
     if (password && password.length > 0) {
         if (password.length < 6) {
             errors.push('La contraseña debe tener al menos 6 caracteres');
@@ -369,21 +373,21 @@ app.put('/api/usuarios/:id', authenticateToken, requireAdmin, (req, res) => {
             errors.push('La contraseña no puede exceder 100 caracteres');
         }
     }
-    
+
     if (!nombre || !nombre.trim()) {
         errors.push('El nombre es requerido');
     } else if (nombre.trim().length > 100) {
         errors.push('El nombre no puede exceder 100 caracteres');
     }
-    
+
     if (!rol || !['admin', 'disenador'].includes(rol)) {
         errors.push('El rol debe ser admin o diseñador');
     }
-    
+
     if (errors.length > 0) {
         return res.status(400).json({ error: 'Datos inválidos', details: errors });
     }
-    
+
     try {
         if (password && password.length > 0) {
             const hash = bcrypt.hashSync(password, 10);
@@ -422,11 +426,14 @@ app.get('/api/articulos/buscar', (req, res) => {
     if (!q || q.length < 3) return res.json([]);
     try {
         const results = db.prepare(`
-            SELECT codigo, descripcion 
-            FROM articulos 
-            WHERE codigo LIKE ? OR descripcion LIKE ? 
+            SELECT codigo, descripcion FROM articulos_pt 
+            WHERE codigo LIKE ? OR descripcion LIKE ?
+            UNION ALL
+            SELECT codigo, descripcion FROM articulos 
+            WHERE codigo LIKE ? OR descripcion LIKE ?
+            ORDER BY codigo
             LIMIT 15
-        `).all(`${q}%`, `%${q}%`);
+        `).all(`${q}%`, `%${q}%`, `${q}%`, `%${q}%`);
         res.json(results);
     } catch (err) {
         console.error('Search error:', err);
@@ -508,36 +515,36 @@ app.post('/api/pedidos', authenticateToken, (req, res) => {
 
     // Validaciones básicas
     const errors = [];
-    
+
     if (!numero_pedido || !numero_pedido.trim()) {
         errors.push('El número de pedido es requerido');
     } else if (numero_pedido.trim().length > 50) {
         errors.push('El número de pedido no puede exceder 50 caracteres');
     }
-    
+
     if (!cliente || !cliente.trim()) {
         errors.push('El cliente es requerido');
     } else if (cliente.trim().length > 200) {
         errors.push('El cliente no puede exceder 200 caracteres');
     }
-    
+
     if (proyecto && proyecto.trim().length > 200) {
         errors.push('El proyecto no puede exceder 200 caracteres');
     }
-    
+
     if (disenador && disenador.trim().length > 100) {
         errors.push('El diseñador no puede exceder 100 caracteres');
     }
-    
+
     if (asesor && asesor.trim().length > 100) {
         errors.push('El asesor no puede exceder 100 caracteres');
     }
-    
+
     // Validar formato de fecha (YYYY-MM-DD)
     if (fecha && !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
         errors.push('La fecha debe tener el formato YYYY-MM-DD');
     }
-    
+
     // Validar estructura de puestos
     if (!Array.isArray(puestos)) {
         errors.push('Los puestos deben ser un arreglo');
@@ -553,7 +560,7 @@ app.post('/api/pedidos', authenticateToken, (req, res) => {
             }
         });
     }
-    
+
     if (errors.length > 0) {
         return res.status(400).json({ error: 'Datos inválidos', details: errors });
     }
@@ -588,36 +595,36 @@ app.put('/api/pedidos/:id', authenticateToken, (req, res) => {
 
     // Validaciones básicas
     const errors = [];
-    
+
     if (!numero_pedido || !numero_pedido.trim()) {
         errors.push('El número de pedido es requerido');
     } else if (numero_pedido.trim().length > 50) {
         errors.push('El número de pedido no puede exceder 50 caracteres');
     }
-    
+
     if (!cliente || !cliente.trim()) {
         errors.push('El cliente es requerido');
     } else if (cliente.trim().length > 200) {
         errors.push('El cliente no puede exceder 200 caracteres');
     }
-    
+
     if (proyecto && proyecto.trim().length > 200) {
         errors.push('El proyecto no puede exceder 200 caracteres');
     }
-    
+
     if (disenador && disenador.trim().length > 100) {
         errors.push('El diseñador no puede exceder 100 caracteres');
     }
-    
+
     if (asesor && asesor.trim().length > 100) {
         errors.push('El asesor no puede exceder 100 caracteres');
     }
-    
+
     // Validar formato de fecha (YYYY-MM-DD)
     if (fecha && !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
         errors.push('La fecha debe tener el formato YYYY-MM-DD');
     }
-    
+
     // Validar estructura de puestos
     if (!Array.isArray(puestos)) {
         errors.push('Los puestos deben ser un arreglo');
@@ -633,7 +640,7 @@ app.put('/api/pedidos/:id', authenticateToken, (req, res) => {
             }
         });
     }
-    
+
     if (errors.length > 0) {
         return res.status(400).json({ error: 'Datos inválidos', details: errors });
     }
@@ -1062,6 +1069,11 @@ app.use((req, res) => {
     res.sendFile(path.join(__dirname, 'client', 'dist', 'index.html'));
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`\n🚀 Integrador App corriendo en http://localhost:${PORT}\n`);
 });
+
+// Aumentar timeouts (10 minutos) para subidas masivas y procesamiento pesado de BD/scripts
+server.keepAliveTimeout = 600000;
+server.headersTimeout = 601000;
+server.timeout = 600000;

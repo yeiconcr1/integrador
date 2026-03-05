@@ -61,14 +61,18 @@ async function processProducts() {
             lineNum++;
             try {
                 const parts = line.split('|');
-                if (parts.length < 3) {
-                    console.warn(`⚠️  Line ${lineNum}: Invalid format - expected at least 3 parts, got ${parts.length}`);
-                    continue;
-                }
-                const code = parts[1].trim();
-                const desc = parts[2].trim();
+                if (parts.length < 3) continue;
 
-                if (code.length >= 10 && code.startsWith('22')) {
+                const code = parts[1].trim();
+                // Algunos archivos PT reportaron la descripción en 2 o al final (por ej. pos 27)
+                // Vamos a usar la descripción en la posición 27 si existe y es lo bastante larga, si no, la 2
+                let desc = parts[2].trim();
+                if (parts.length > 27 && parts[27].trim().length > desc.length) {
+                    desc = parts[27].trim();
+                }
+
+                // Ingesta mejorada: Permitir todos los códigos >4 dígitos numéricos en lugar de solo '22'
+                if (code.length >= 4 && /^\d+$/.test(code)) {
                     batch.push([code, desc]);
                     if (batch.length >= 2000) {
                         const tx = db.transaction((rows) => {
@@ -83,7 +87,7 @@ async function processProducts() {
                 continue;
             }
         }
-        
+
         if (batch.length > 0) {
             try {
                 db.transaction((rows) => {
@@ -120,21 +124,33 @@ async function processMP() {
         for await (const line of rl) {
             lineNum++;
             try {
-                const parts = line.split('\t');
-                if (parts.length < 24) {
-                    console.warn(`⚠️  Line ${lineNum}: Invalid format - expected at least 24 parts, got ${parts.length}`);
-                    continue;
+                let parts = line.split('\t');
+                if (parts.length < 5) {
+                    parts = line.split('|');
                 }
 
+                if (parts.length < 3) continue;
+
                 const code = parts[1].trim();
-                const desc = parts[2].trim();
-                const loc = parts[23].trim().toUpperCase();
-                
+                let desc = parts[2].trim();
+                if (parts.length > 27 && parts[27].trim().length > desc.length) {
+                    desc = parts[27].trim();
+                }
+
+                // Determinar tipo de material (formica, tela, pintura, etc...) para clasificarlo
+                // Algunos export de oracle traen esto en parts[23], adaptaremos por index relativo
+                let loc = '0';
+                if (parts.length >= 24) {
+                    loc = parts[23].trim().toUpperCase();
+                } else if (parts.length >= 20) {
+                    loc = parts[19].trim().toUpperCase();
+                }
+
                 // Skip if description contains GENERICO or CODIGO INACTIVO
                 if (desc.includes('GENERICO') || desc.includes('CODIGO INACTIVO')) continue;
-                
-                if (!code) continue;
-                
+
+                if (code.length < 4 || !/^\d+$/.test(code)) continue;
+
                 // Insert article
                 artBatch.push([code, desc]);
                 if (artBatch.length >= 2000) {
@@ -144,19 +160,19 @@ async function processMP() {
                     tx(artBatch.splice(0));
                 }
                 countArts++;
-                
+
                 // Insert materials/finishes based on location
                 if (loc && loc !== '0' && loc !== '0000') {
                     const catalogTypes = {
                         '1': 'pintura',
-                        '2': 'formica', 
+                        '2': 'formica',
                         '3': 'supercor',
                         '4': 'canto',
                         '5': 'madecanto',
                         '6': 'vidrio',
                         '7': 'tela'
                     };
-                    
+
                     const type = catalogTypes[loc];
                     if (type) {
                         try {
@@ -174,7 +190,7 @@ async function processMP() {
                 continue;
             }
         }
-        
+
         if (artBatch.length > 0) {
             try {
                 db.transaction((rows) => {
@@ -195,13 +211,13 @@ async function processMP() {
 async function run() {
     const startTime = Date.now();
     console.log('🚀 Starting data ingestion process...');
-    
+
     try {
         // Check if files exist before starting
         const missingFiles = [];
         if (!fs.existsSync(FILE_PRODUCTS)) missingFiles.push(FILE_PRODUCTS);
         if (!fs.existsSync(FILE_MP)) missingFiles.push(FILE_MP);
-        
+
         if (missingFiles.length > 0) {
             console.error('❌ Missing required files:');
             missingFiles.forEach(file => console.error(`   - ${file}`));
@@ -210,7 +226,7 @@ async function run() {
         }
 
         console.log('📁 All required files found, starting processing...');
-        
+
         await processProducts();
         await processMP();
 
@@ -231,7 +247,7 @@ async function run() {
 
         const duration = ((Date.now() - startTime) / 1000).toFixed(2);
         console.log(`🚀 SUCCESS: Everything updated in ${duration}s.`);
-        
+
     } catch (err) {
         console.error('\n❌ FATAL ERROR: Data ingestion failed');
         console.error('Error details:', err.message);

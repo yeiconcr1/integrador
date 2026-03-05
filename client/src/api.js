@@ -133,19 +133,46 @@ export async function fetchDataStatus() {
     return apiFetch('/admin/data/status');
 }
 
-export async function uploadDataFile(file, expectedName) {
-    const form = new FormData();
-    form.append('file', file);
-    form.append('expectedName', expectedName);
-    const token = getToken();
-    const r = await fetch(`${BASE}/admin/data/upload`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: form
+export function uploadDataFile(file, expectedName) {
+    return new Promise((resolve, reject) => {
+        const form = new FormData();
+        form.append('expectedName', expectedName);
+        form.append('file', file);
+
+        const token = getToken();
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `${BASE}/admin/data/upload`, true);
+
+        if (token) {
+            xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+        }
+
+        // Timeout 0 (infinito) para permitir subidas tan largas como sean necesarias
+        xhr.timeout = 0;
+
+        xhr.onload = function () {
+            try {
+                const data = JSON.parse(xhr.responseText);
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    resolve(data);
+                } else {
+                    reject(new Error(data.error || 'Error subiendo archivo (Server responded ' + xhr.status + ')'));
+                }
+            } catch (err) {
+                reject(new Error('Error procesando respuesta del servidor. ' + err.message));
+            }
+        };
+
+        xhr.onerror = function () {
+            reject(new Error('Failed to fetch/upload: Conexión interrumpida o rechazada por el navegador/servidor.'));
+        };
+
+        xhr.ontimeout = function () {
+            reject(new Error('Failed to fetch/upload: Tiempo de subida excedido.'));
+        };
+
+        xhr.send(form);
     });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data.error || 'Error subiendo archivo');
-    return data;
 }
 
 export async function executeDataScript(scriptId) {

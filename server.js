@@ -298,8 +298,8 @@ const upload = multer({
 
 // load script metadata from the same file the React app imports so
 // frontend and backend remain in sync.  the config file also includes
-// "command"/"args" properties that the server will use when it spawns
-// the processes.
+// Frontend and backend config keep in sync. Command configs included too.
+// Trigger nodemon restart buffer
 const DATA_MAINT_SCRIPTS = require(path.join(__dirname, 'client', 'src', 'config', 'dataMaintenance.json'));
 
 // build a quick-access map for file existence checks

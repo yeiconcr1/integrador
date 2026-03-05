@@ -9,6 +9,10 @@
     "dev": "concurrently \"node server.js\" \"npm run dev --prefix client\"",
     "build": "npm run build --prefix client",
     "ingest": "node scripts/ingest_data.js",
+    "ingest:bom": "node scripts/ingest_bom_materiales.js",
+    "bom:transform": "python3 scripts/transformar_bom.py",
+    "data:all": "npm run ingest && npm run ingest:bom && npm run bom:transform",
+    "data:status": "echo \"Use the /api/admin/data/status endpoint\"",
     "import:xlsb": "node scripts/import_pedidos_from_xlsb.js"
   },
   "keywords": [],
@@ -16,10 +20,14 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "better-sqlite3": "^12.6.2",
     "cors": "^2.8.6",
     "exceljs": "^4.4.0",
     "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.1.1",
+    "playwright": "^1.58.2",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

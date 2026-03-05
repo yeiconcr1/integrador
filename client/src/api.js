@@ -1,39 +1,98 @@
 const BASE = '/api'
 
+export function getToken() {
+    return localStorage.getItem('token')
+}
+
+export function getUser() {
+    const u = localStorage.getItem('user')
+    return u ? JSON.parse(u) : null
+}
+
+export async function login(email, password) {
+    const r = await fetch(`${BASE}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+    })
+    const data = await r.json()
+    if (!r.ok) throw new Error(data.error || 'Error de inicio de sesión')
+    localStorage.setItem('token', data.token)
+    localStorage.setItem('user', JSON.stringify(data.user))
+    return data.user
+}
+
+export function logout() {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+}
+
+function authHeaders() {
+    const token = getToken()
+    const headers = { 'Content-Type': 'application/json' }
+    if (token) headers['Authorization'] = `Bearer ${token}`
+    return headers
+}
+
+async function authFetch(url, options = {}) {
+    const token = getToken()
+    const headers = { ...options.headers }
+    if (token) headers['Authorization'] = `Bearer ${token}`
+    const r = await fetch(url, { ...options, headers })
+    if (r.status === 401 || r.status === 403) {
+        logout()
+        window.dispatchEvent(new Event('unauthorized'))
+    }
+    return r
+}
+
+export async function apiFetch(url, options = {}) {
+    const r = await authFetch(`${BASE}${url}`, options)
+    const data = await r.json()
+    if (!r.ok) throw new Error(data.error || 'Error en la petición')
+    return data
+}
+
 export async function fetchPedidos() {
-    const r = await fetch(`${BASE}/pedidos`)
+    const r = await authFetch(`${BASE}/pedidos`)
     if (!r.ok) throw new Error('Error cargando pedidos')
     return r.json()
 }
 
 export async function fetchPedido(id) {
-    const r = await fetch(`${BASE}/pedidos/${id}`)
+    const r = await authFetch(`${BASE}/pedidos/${id}`)
     if (!r.ok) throw new Error('Error cargando pedido')
     return r.json()
 }
 
 export async function createPedido(data) {
-    const r = await fetch(`${BASE}/pedidos`, {
+    const r = await authFetch(`${BASE}/pedidos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
     })
-    if (!r.ok) throw new Error('Error creando pedido')
+    if (!r.ok) {
+        const body = await r.json().catch(() => null)
+        throw new Error(body?.error || 'Error creando pedido')
+    }
     return r.json()
 }
 
 export async function updatePedido(id, data) {
-    const r = await fetch(`${BASE}/pedidos/${id}`, {
+    const r = await authFetch(`${BASE}/pedidos/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
     })
-    if (!r.ok) throw new Error('Error actualizando pedido')
+    if (!r.ok) {
+        const body = await r.json().catch(() => null)
+        throw new Error(body?.error || 'Error actualizando pedido')
+    }
     return r.json()
 }
 
 export async function deletePedido(id) {
-    const r = await fetch(`${BASE}/pedidos/${id}`, { method: 'DELETE' })
+    const r = await authFetch(`${BASE}/pedidos/${id}`, { method: 'DELETE' })
     if (!r.ok) throw new Error('Error eliminando pedido')
     return r.json()
 }
@@ -42,27 +101,63 @@ export async function fetchCatalogo(tipo, q = '') {
     const url = q
         ? `${BASE}/catalogos/${tipo}?q=${encodeURIComponent(q)}`
         : `${BASE}/catalogos/${tipo}`
-    const r = await fetch(url)
+    const r = await authFetch(url)
     return r.json()
 }
 
 export async function searchArticles(q) {
     if (!q || q.length < 3) return []
-    const r = await fetch(`${BASE}/articulos/buscar?q=${encodeURIComponent(q)}`)
+    const r = await authFetch(`${BASE}/articulos/buscar?q=${encodeURIComponent(q)}`)
     if (!r.ok) return []
     return r.json()
 }
 
 export async function lookupArticleByCode(code) {
     if (!code) return null
-    const r = await fetch(`${BASE}/articulos/lookup/${encodeURIComponent(code)}`)
+    const r = await authFetch(`${BASE}/articulos/lookup/${encodeURIComponent(code)}`)
     if (!r.ok) return null
     return r.json()
 }
 
+export async function fetchMateriales(code) {
+    if (!code) return []
+    try {
+        const r = await authFetch(`${BASE}/articulos/${encodeURIComponent(code)}/materiales`)
+        if (!r.ok) return []
+        return r.json()
+    } catch { return [] }
+}
+
+// ─── DATA MAINTENANCE HELPERS ───────────────────────────────────────────
+export async function fetchDataStatus() {
+    return apiFetch('/admin/data/status');
+}
+
+export async function uploadDataFile(file, expectedName) {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('expectedName', expectedName);
+    const token = getToken();
+    const r = await fetch(`${BASE}/admin/data/upload`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: form
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Error subiendo archivo');
+    return data;
+}
+
+export async function executeDataScript(scriptId) {
+    const r = await authFetch(`${BASE}/admin/data/execute/${scriptId}`, { method: 'POST' });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Error ejecutando script');
+    return data;
+}
+
 export async function downloadExcel(id) {
     try {
-        const r = await fetch(`${BASE}/pedidos/${id}/export`)
+        const r = await authFetch(`${BASE}/pedidos/${id}/export`)
         if (!r.ok) {
             const text = await r.text()
             throw new Error(`Error exportando: ${text}`)
@@ -74,18 +169,53 @@ export async function downloadExcel(id) {
         const filename = match ? match[1] : `INTEGRADOR_${id}.xlsx`
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
-        a.href = url
         a.download = filename
         document.body.appendChild(a)
         a.click()
         a.remove()
-        URL.revokeObjectURL(url)
-        return { success: true, filename }
+        window.URL.revokeObjectURL(url)
     } catch (err) {
-        console.error('Download error:', err)
         throw err
     }
 }
+
+// ─── USER ADMIN API ─────────────────────────────────────────────────────────
+
+export async function fetchUsuarios() {
+    const r = await authFetch(`${BASE}/usuarios`)
+    if (!r.ok) throw new Error('Error cargando usuarios')
+    return r.json()
+}
+
+export async function createUsuario(data) {
+    const r = await authFetch(`${BASE}/usuarios`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    const resValue = await r.json()
+    if (!r.ok) throw new Error(resValue.error || 'Error creando usuario')
+    return resValue
+}
+
+export async function updateUsuario(id, data) {
+    const r = await authFetch(`${BASE}/usuarios/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    const resValue = await r.json()
+    if (!r.ok) throw new Error(resValue.error || 'Error actualizando usuario')
+    return resValue
+}
+
+export async function deleteUsuario(id) {
+    const r = await authFetch(`${BASE}/usuarios/${id}`, { method: 'DELETE' })
+    const resValue = await r.json()
+    if (!r.ok) throw new Error(resValue.error || 'Error eliminando usuario')
+    return resValue
+}
+
 
 export function emptyItem() {
     return {

@@ -3,12 +3,101 @@
 @import "tailwindcss";
 
 * {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 body {
-  background: #f0f4f8;
+  background: #e8ecf1;
   color: #1e293b;
+}
+
+/* Oracle EBS Global Header Band */
+.ebs-header {
+  background: linear-gradient(180deg, #1a3a5c 0%, #0f2b47 100%);
+  border-bottom: 2px solid #c9930a;
+}
+
+/* Oracle EBS sub-header / toolbar */
+.ebs-toolbar {
+  background: linear-gradient(180deg, #dfe6ed 0%, #c8d1db 100%);
+  border-bottom: 1px solid #a0aec0;
+}
+
+/* Oracle EBS Navigator sidebar */
+.ebs-nav {
+  background: linear-gradient(180deg, #f7f8fa 0%, #edf0f4 100%);
+  border-right: 1px solid #b0bec5;
+}
+
+/* Oracle EBS Form region */
+.ebs-form-region {
+  background: #fefefe;
+  border: 1px solid #b0bec5;
+  border-radius: 3px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.ebs-form-region-header {
+  background: linear-gradient(180deg, #4a6fa5 0%, #3a5a8a 100%);
+  color: white;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 3px 3px 0 0;
+  letter-spacing: 0.02em;
+}
+
+/* Oracle EBS button styles */
+.ebs-btn {
+  background: linear-gradient(180deg, #f5f5f5 0%, #ddd 100%);
+  border: 1px solid #999;
+  border-radius: 3px;
+  padding: 4px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.ebs-btn:hover {
+  background: linear-gradient(180deg, #fff 0%, #e8e8e8 100%);
+  border-color: #777;
+}
+
+.ebs-btn:active {
+  background: linear-gradient(180deg, #d0d0d0 0%, #bbb 100%);
+}
+
+.ebs-btn-primary {
+  background: linear-gradient(180deg, #4a7cc9 0%, #365ea3 100%);
+  border-color: #2a4a82;
+  color: white;
+}
+
+.ebs-btn-primary:hover {
+  background: linear-gradient(180deg, #5a8cd9 0%, #4a6eb3 100%);
+  border-color: #2a4a82;
+}
+
+.ebs-btn-danger {
+  background: linear-gradient(180deg, #d94f4f 0%, #b33 100%);
+  border-color: #922;
+  color: white;
+}
+
+.ebs-btn-danger:hover {
+  background: linear-gradient(180deg, #e55 0%, #c44 100%);
+}
+
+.ebs-btn-success {
+  background: linear-gradient(180deg, #4a9c5a 0%, #3a7c4a 100%);
+  border-color: #2a6a3a;
+  color: white;
+}
+
+.ebs-btn-success:hover {
+  background: linear-gradient(180deg, #5aac6a 0%, #4a8c5a 100%);
 }
 
 /* Custom scrollbar */
@@ -18,23 +107,69 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #e8eef4;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
+  background: #7a9cc6;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #4a7cc9;
 }
 
-/* Table cell input focus ring */
+.hide-horizontal-scrollbar {
+  scrollbar-width: none;
+}
+
+.hide-horizontal-scrollbar::-webkit-scrollbar:horizontal {
+  height: 0;
+}
+
+/* Table cell input - remove default focus styles */
 .cell-input:focus {
-  outline: 2px solid #3b82f6;
-  outline-offset: -2px;
-  background: rgba(59, 130, 246, 0.04);
+  outline: none;
+}
+
+/* Blue focus indicator at cell edges */
+td:focus-within {
+  box-shadow: inset 0 0 0 1.5px #4a7cc9;
+  background: rgba(74, 124, 201, 0.04);
+}
+
+/* Oracle EBS: Form field label style */
+.ebs-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #333;
+  letter-spacing: 0.01em;
+}
+
+/* Oracle EBS: Form field input style */
+.ebs-input {
+  border: 1px solid #a0aec0;
+  border-radius: 2px;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: #1a202c;
+  background: #fff;
+  transition: border-color 0.15s;
+}
+
+.ebs-input:focus {
+  outline: none;
+  border-color: #4a7cc9;
+  box-shadow: 0 0 0 1px rgba(74, 124, 201, 0.3);
+}
+
+.ebs-input::placeholder {
+  color: #a0aec0;
+}
+
+.ebs-input.ebs-input-error {
+  border-color: #c53030;
+  background: #fff5f5;
 }
 
 /* Autocomplete dropdown */
@@ -71,18 +206,23 @@ body {
   animation: toastSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Sidebar active pulse */
+/* Sidebar active indicator */
 .sidebar-active {
   position: relative;
+  background: #dbe4f0 !important;
+  border-left: 3px solid #3a5a8a !important;
 }
 
-.sidebar-active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 8px;
-  bottom: 8px;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
-  background: linear-gradient(to bottom, #3b82f6, #2563eb);
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.5;
+    transform: scale(1.3);
+  }
 }

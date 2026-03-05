@@ -113,6 +113,24 @@ La base de datos `integrador.db` se genera automáticamente con `npm run ingest`
 | GET | `/api/articulos/buscar` | Buscar artículos por código o descripción |
 | GET | `/api/articulos/lookup/:codigo` | Buscar descripción por código exacto |
 
+## Mantenimiento de datos y secuencia de procesos
+
+La aplicación ahora incluye una sección **"MANTENIMIENTO DE DATOS"** accesible desde el panel de administración de usuarios (requiere rol **admin**). Aquí se pueden subir los archivos maestros y ejecutar en orden los scripts que regeneran la información en la base de datos:
+
+1. **Ingesta Maestra** (`PT.txt`, `MP.txt`) – carga los catálogos y artículos para búsqueda.
+2. **Ingesta BOM** (`LISTAS_TOT.csv`) – analiza la jerarquía de materiales y rellena la tabla `bom_materiales`.
+3. **Transformación Técnica** (`LISTAS_TOT.csv` + `planoind.csv`) – genera `BOMS_indentados.txt` con la estructura anidada de cada BOM.
+
+Cada botón está bloqueado hasta que los pasos anteriores se hayan completado con éxito, asegurando un flujo secuencial. El sistema también muestra una lista de archivos requeridos y su estado de presencia en el directorio raíz.
+
+> Los scripts pueden ejecutarse manualmente desde la línea de comandos usando:
+>
+> ```bash
+> npm run ingest          # paso 1
+> npm run ingest:bom      # paso 2
+> npm run bom:transform   # paso 3
+> ```
+
 ## Tipos de catálogos
 
 Los campos de materiales en cada artículo tienen autocompletado desde estos catálogos:

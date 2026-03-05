@@ -136,22 +136,24 @@ export default function DataMaintenance({ showToast }) {
                                 ))}
                             </div>
 
-                            <div className="mt-auto pt-4 flex flex-col gap-2">
+                            <div className="mt-auto pt-4 flex flex-col gap-2 relative">
                                 <button
                                     onClick={() => runScript(s.id, s.title)}
+                                    disabled={loading || executing === s.id}
+                                    className={`w-full py-2.5 rounded-md font-semibold text-[12px] transition-all shadow-sm ${executing === s.id
+                                            ? 'bg-blue-300 text-white cursor-wait'
+                                            : 'bg-blue-600 hover:bg-blue-700 text-white active:scale-[0.98]'
+                                        }`}
                                 >
-                                    Ejecutar Script
+                                    {executing === s.id ? (
+                                        <span className="flex items-center justify-center gap-2">
+                                            <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                            Ejecutando...
+                                        </span>
+                                    ) : (
+                                        'Ejecutar Proceso'
+                                    )}
                                 </button>
-                                <button onClick={() => setResults({})} className="text-[9px] hover:text-white underline">Limpiar</button>
-                            </div>
-                            <div className="p-3 font-mono text-[10px] text-green-400 overflow-auto flex-1 whitespace-pre-wrap leading-tight">
-                                {Object.values(results).filter(r => r.output).map((r, i) => (
-                                    <div key={i} className="mb-4">
-                                        <div className="text-gray-500 mb-1 border-b border-gray-800 pb-0.5">--- Log {new Date().toLocaleTimeString()} ---</div>
-                                        {r.output}
-                                    </div>
-                                ))}
-                                {!Object.values(results).some(r => r.output) && '> Esperando ejecución de procesos...'}
                             </div>
                         </div>
                     </div>

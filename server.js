@@ -308,14 +308,37 @@ DATA_MAINT_SCRIPTS.forEach(s => {
     FILES_REQUIRED[s.id] = s.files;
 });
 
-// status endpoint returns an object listing whether each input file is present
+// Status endpoint returns an object listing whether each input file is present
 app.get('/api/admin/data/status', authenticateToken, requireAdmin, (req, res) => {
     const files = {};
     const allFiles = new Set(Object.values(FILES_REQUIRED).flat());
+
+    // Also include potential output files from scripts config
+    DATA_MAINT_SCRIPTS.forEach(s => {
+        if (s.outputFile) allFiles.add(s.outputFile);
+    });
+
     allFiles.forEach(f => {
         files[f] = fs.existsSync(path.join(__dirname, f));
     });
     res.json({ files });
+});
+
+// Download endpoint for script results
+app.get('/api/admin/data/download/:filename', authenticateToken, requireAdmin, (req, res) => {
+    const { filename } = req.params;
+    // Basic security: only allow specific results
+    const allowed = ['BOMS_indentados.csv', 'BOMS_indentados.txt'];
+    if (!allowed.includes(filename)) {
+        return res.status(403).json({ error: 'Archivo no permitido' });
+    }
+
+    const filePath = path.join(__dirname, filename);
+    if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: 'Archivo no encontrado' });
+    }
+
+    res.download(filePath, filename);
 });
 
 // upload handler saves uploaded file to root and optionally renames it

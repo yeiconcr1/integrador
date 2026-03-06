@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { apiFetch, uploadDataFile, executeDataScript } from '../api'
+import { apiFetch, uploadDataFile, executeDataScript, downloadResultFile } from '../api'
 
 // cargar lista de scripts desde la configuración compartida
 import scripts from '../config/dataMaintenance.json'
@@ -165,7 +165,15 @@ export default function DataMaintenance({ showToast }) {
                                 )}
                             </div>
 
-                            <div className="pt-6 mt-auto border-t border-gray-200">
+                            <div className="pt-6 mt-auto border-t border-gray-200 flex flex-col gap-2">
+                                {s.outputFile && fileStatus[s.outputFile] && (
+                                    <button
+                                        onClick={() => downloadResultFile(s.outputFile)}
+                                        className="ebs-btn w-full py-2 flex items-center justify-center font-bold tracking-wide shadow-sm border-[#3a5a8a] text-[#3a5a8a] hover:bg-[#ebf0f7]"
+                                    >
+                                        📥 DESCARGAR RESULTADO CSV
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => runScript(s.id, s.title)}
                                     disabled={loading || executing === s.id}

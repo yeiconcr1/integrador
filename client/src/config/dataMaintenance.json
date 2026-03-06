@@ -27,13 +27,14 @@
   {
     "id": "transform-bom",
     "title": "3. Transformación Técnica (Python)",
-    "description": "Genera el archivo estructural BOMS_indentados.txt desde el catálogo maestro.",
+    "description": "Genera el archivo estructural BOMS_indentados.csv desde el catálogo maestro.",
     "files": [
       "LISTAS_TOT.csv"
     ],
     "command": "python3",
     "args": [
       "scripts/transformar_bom.py"
-    ]
+    ],
+    "outputFile": "BOMS_indentados.csv"
   }
 ]

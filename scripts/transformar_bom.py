@@ -173,7 +173,7 @@ def extraer_boms_principales(registros):
 if __name__ == "__main__":
     archivo_csv = "LISTAS_TOT.csv"
     archivo_planoind = "planoind.csv"
-    archivo_salida = "BOMS_indentados.txt"
+    archivo_salida = "BOMS_indentados.csv"
     
     # Verificar si existe planoind.csv para usar solo esos códigos
     import os

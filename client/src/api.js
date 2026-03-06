@@ -133,6 +133,30 @@ export async function fetchDataStatus() {
     return apiFetch('/admin/data/status');
 }
 
+export async function downloadResultFile(filename) {
+    const token = getToken();
+    const r = await fetch(`${BASE}/admin/data/download/${filename}`, {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+
+    if (!r.ok) {
+        const err = await r.json().catch(() => ({ error: 'Error al descargar' }));
+        throw new Error(err.error || 'No se pudo descargar el archivo');
+    }
+
+    const blob = await r.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+}
+
 export function uploadDataFile(file, expectedName) {
     return new Promise((resolve, reject) => {
         const form = new FormData();

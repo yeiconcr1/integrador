@@ -25,3 +25,6 @@ client/dist/
 # Env
 .env
 .env.local
+LISTAS_TOT.csv
+planoind.csv
+planoind (1).csv

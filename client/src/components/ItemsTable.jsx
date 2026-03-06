@@ -194,6 +194,10 @@ export default function ItemsTable({ items, onChange, onMaterialesChange, invali
                 const t = parseFloat(key === 'cantidad_tipologia' ? val : it.cantidad_tipologia) || 0
                 next.cantidad_total = t > 0 ? String(u * t) : u ? String(u) : ''
             }
+            // Limpieza inmediata de descripción al borrar código
+            if (key === 'codigo' && !val) {
+                next.descripcion = ''
+            }
             return next
         })
         onChange(updated)
@@ -229,8 +233,19 @@ export default function ItemsTable({ items, onChange, onMaterialesChange, invali
     }, [items, onChange])
 
     const handleCodeLookup = async (idx, code) => {
-        if (!code) return
         const item = items[idx]
+        const itemId = item._id || idx
+
+        if (!code) {
+            const updatedItems = items.map((it, i) => {
+                if (i !== idx) return it
+                return { ...it, descripcion: '' }
+            })
+            onChange(updatedItems)
+            loadMateriales(itemId, "", idx, updatedItems)
+            return
+        }
+
         const article = await lookupArticleByCode(code)
         let updatedItems = items
         if (article) {
@@ -247,7 +262,7 @@ export default function ItemsTable({ items, onChange, onMaterialesChange, invali
             onChange(updatedItems)
         }
         // Cargar materiales del BOM para este código
-        loadMateriales(item._id || idx, code, idx, updatedItems)
+        loadMateriales(itemId, code, idx, updatedItems)
     }
 
     const addRow = () => onChange([...items, emptyItem()])

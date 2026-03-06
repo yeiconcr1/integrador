@@ -415,9 +415,10 @@ export default function ItemsTable({ items, onChange, onMaterialesChange, invali
                                                             value={item[col.key] || ''}
                                                             onChange={e => updateItem(idx, col.key, e.target.value)}
                                                             placeholder={col.qty ? '0' : ''}
+                                                            disabled={col.total}
                                                             className={`cell-input w-full h-full bg-transparent border-0 px-2 py-1 text-[11px] leading-4 placeholder:text-gray-300 focus:outline-none
                                                   ${col.qty ? 'text-right tabular-nums font-medium text-gray-600' : 'text-gray-800'}
-                                                  ${col.total ? 'text-[#3a5a8a] font-bold' : ''}
+                                                  ${col.total ? 'text-[#3a5a8a] font-bold bg-gray-50/30 cursor-default' : ''}
                                                   ${['nota_h', 'nota_l', 'nota_prof'].includes(col.key) ? 'text-red-600 font-medium' : ''}
                                                 `}
                                                         />

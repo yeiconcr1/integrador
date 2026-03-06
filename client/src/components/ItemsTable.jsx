@@ -4,7 +4,7 @@ import { emptyItem, lookupArticleByCode, fetchMateriales } from '../api'
 
 const COLUMNS = [
     { key: 'codigo', label: 'Código', w: 'w-[100px] min-w-[100px]', isCode: true, group: 'id' },
-    { key: 'descripcion', label: 'Descripción', w: 'w-[200px] min-w-[200px]', search: true, group: 'id' },
+    { key: 'descripcion', label: 'Descripción', w: 'w-[400px] min-w-[400px]', search: true, group: 'id' },
     { key: 'nota_h', label: 'H', w: 'w-[48px]  min-w-[48px]', group: 'dims' },
     { key: 'nota_l', label: 'L', w: 'w-[48px]  min-w-[48px]', group: 'dims' },
     { key: 'nota_prof', label: 'Prof', w: 'w-[48px]  min-w-[48px]', group: 'dims' },

@@ -11,12 +11,9 @@
 [0] 🚀 Integrador App corriendo en http://localhost:3000
 [0] 
 [1] 
-[1]   VITE v7.3.1  ready in 247 ms
+[1]   VITE v7.3.1  ready in 215 ms
 [1] 
 [1]   ➜  Local:   http://localhost:5173/
 [1]   ➜  Network: use --host to expose
-[1] 7:21:06 PM [vite] (client) hmr update /src/components/DataMaintenance.jsx, /src/index.css
-[1] 7:21:13 PM [vite] (client) hmr update /src/App.jsx, /src/components/Login.jsx, /src/components/ItemsTable.jsx, /src/components/UserAdmin.jsx, /src/components/DataMaintenance.jsx, /src/components/AutocompleteInput.jsx, /src/index.css
-[1] 7:21:40 PM [vite] (client) hmr update /src/components/DataMaintenance.jsx, /src/index.css
-[1] 7:21:46 PM [vite] (client) hmr update /src/components/DataMaintenance.jsx, /src/index.css
-[1] 7:21:46 PM [vite] (client) hmr update /src/components/DataMaintenance.jsx, /src/index.css
+[1] 7:25:40 PM [vite] (client) hmr update /src/components/DataMaintenance.jsx, /src/index.css
+[1] 7:26:03 PM [vite] (client) hmr update /src/components/DataMaintenance.jsx, /src/index.css

@@ -8,7 +8,7 @@ export default function DataMaintenance({ showToast }) {
     const [fileStatus, setFileStatus] = useState({})
     const [loading, setLoading] = useState(false)
     const [results, setResults] = useState({})
-    const [executing, setExecuting] = useState(null) // 'master', 'bom', 'transform'
+    const [executing, setExecuting] = useState(null) // 'ingest-master', 'ingest-bom', 'transform-bom'
     const [uploading, setUploading] = useState(null) // fileName being uploaded
 
     useEffect(() => {
@@ -109,9 +109,9 @@ export default function DataMaintenance({ showToast }) {
                     <div key={s.id} className="ebs-form-region flex flex-col h-full bg-[#fcfcfd]">
                         <div className="ebs-form-region-header flex items-center justify-between border-b border-[#3a5a8a]">
                             <span className="font-semibold tracking-wide flex items-center gap-2">
-                                {s.id === 'master' && '📁'}
-                                {s.id === 'bom' && '📊'}
-                                {s.id === 'transform' && '⚙️'}
+                                {s.id === 'ingest-master' && '📁'}
+                                {s.id === 'ingest-bom' && '📊'}
+                                {s.id === 'transform-bom' && '⚙️'}
                                 {s.title}
                             </span>
                         </div>
@@ -158,7 +158,25 @@ export default function DataMaintenance({ showToast }) {
                                         </label>
                                     </div>
                                 ))}
-                                {s.files.length === 0 && (
+
+                                {s.outputFile && (
+                                    <div className="mt-2">
+                                        <span className="ebs-label block mb-1 text-[#1a3a5c]">ARCHIVO RESULTADO</span>
+                                        <div className={`flex items-center justify-between bg-white border border-dashed ${fileStatus[s.outputFile] ? 'border-[#4a9c5a] bg-[#f0f9f1]' : 'border-gray-300'} p-3 rounded-sm`}>
+                                            <div className="flex items-center gap-2">
+                                                <div className={`w-2.5 h-2.5 rounded-sm border ${fileStatus[s.outputFile] ? 'bg-[#4a9c5a] border-[#2a6a3a]' : 'bg-gray-300 border-gray-400'}`}></div>
+                                                <span className="text-[12px] font-mono text-gray-700">{s.outputFile}</span>
+                                            </div>
+                                            {fileStatus[s.outputFile] ? (
+                                                <span className="text-[10px] font-bold text-[#3a7c4a]">GENERADO</span>
+                                            ) : (
+                                                <span className="text-[10px] font-bold text-gray-400">PENDIENTE</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {s.files.length === 0 && !s.outputFile && (
                                     <div className="bg-[#f8f9fa] border border-[#e5e7eb] p-3 rounded-sm text-center italic text-xs text-gray-500 shadow-inner">
                                         Generación puramente en memoria.
                                     </div>
@@ -169,7 +187,7 @@ export default function DataMaintenance({ showToast }) {
                                 {s.outputFile && fileStatus[s.outputFile] && (
                                     <button
                                         onClick={() => downloadResultFile(s.outputFile)}
-                                        className="ebs-btn w-full py-2 flex items-center justify-center font-bold tracking-wide shadow-sm border-[#3a5a8a] text-[#3a5a8a] hover:bg-[#ebf0f7]"
+                                        className="ebs-btn-success w-full py-2 flex items-center justify-center font-bold tracking-wide shadow-sm"
                                     >
                                         📥 DESCARGAR RESULTADO CSV
                                     </button>

@@ -190,9 +190,21 @@ export default function ItemsTable({ items, onChange, onMaterialesChange, invali
             if (i !== idx) return it
             const next = { ...it, [key]: val }
             if (key === 'cantidad_unitaria' || key === 'cantidad_tipologia') {
-                const u = parseFloat(key === 'cantidad_unitaria' ? val : it.cantidad_unitaria) || 0
-                const t = parseFloat(key === 'cantidad_tipologia' ? val : it.cantidad_tipologia) || 0
-                next.cantidad_total = t > 0 ? String(u * t) : u ? String(u) : ''
+                const rawU = key === 'cantidad_unitaria' ? val : it.cantidad_unitaria
+                const rawT = key === 'cantidad_tipologia' ? val : it.cantidad_tipologia
+
+                const u = parseFloat(rawU)
+                const t = parseFloat(rawT)
+
+                if (isNaN(u) && isNaN(t)) {
+                    next.cantidad_total = ''
+                } else if (!isNaN(u) && isNaN(t)) {
+                    // Si solo hay unitario, el total es el unitario (tipología implícita 1 o pendiente)
+                    next.cantidad_total = String(u)
+                } else if (!isNaN(u) && !isNaN(t)) {
+                    // Cálculo real: incluye el caso donde t es 0
+                    next.cantidad_total = String(u * t)
+                }
             }
             // Limpieza inmediata de descripción al borrar código
             if (key === 'codigo' && !val) {

@@ -268,6 +268,15 @@ export async function deleteUsuario(id) {
 }
 
 
+export function isEmptyItem(it) {
+    if (!it) return true
+    // Consideramos vacío si no tiene código Y no tiene descripción Y no tiene notas
+    const hasCode = !!it.codigo?.trim()
+    const hasDesc = !!it.descripcion?.trim()
+    const hasNotes = !!(it.nota_h?.trim() || it.nota_l?.trim() || it.nota_prof?.trim() || it.nota_adicional?.trim())
+    return !hasCode && !hasDesc && !hasNotes
+}
+
 export function emptyItem() {
     return {
         _id: crypto.randomUUID(),

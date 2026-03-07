@@ -1,8 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const mpPath = path.join(__dirname, '../MP.txt');
-const catalogosPath = path.join(__dirname, '../catalogos.json');
+const mpPath = path.join(__dirname, '../data/MP.txt');
+const catalogosPath = path.join(__dirname, '../data/catalogos.json');
 
 // Read MP.txt
 const mpContent = fs.readFileSync(mpPath, 'latin1'); // Use latin1 to handle special chars if needed, or utf-8

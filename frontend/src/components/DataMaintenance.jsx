@@ -8,8 +8,9 @@ export default function DataMaintenance({ showToast }) {
     const [fileStatus, setFileStatus] = useState({})
     const [loading, setLoading] = useState(false)
     const [results, setResults] = useState({})
-    const [executing, setExecuting] = useState(null) // 'ingest-master', 'ingest-bom', 'transform-bom'
-    const [uploading, setUploading] = useState(null) // fileName being uploaded
+    const [executing, setExecuting] = useState(null)
+    const [uploading, setUploading] = useState(null)
+    const [confirmModal, setConfirmModal] = useState(null) // solo para mostrar qué rutina se ejecuta en los logs locales (opcional)
 
     useEffect(() => {
         checkStatus()
@@ -39,40 +40,54 @@ export default function DataMaintenance({ showToast }) {
         }))
         try {
             await uploadDataFile(file, expectedName)
-            // Refrescar estado inmediatamente
             await checkStatus()
             setResults(prev => ({
                 ...prev,
                 [expectedName + '_upload']: {
                     status: 'success',
-                    message: `Archivo ${expectedName} subido correctamente. Ahora puedes cargar el siguiente archivo si corresponde.`,
-                    output: `> [${new Date().toLocaleTimeString()}] Archivo ${file.name} subido correctamente.\n> Esperando el siguiente archivo o proceso...`
+                    message: `Archivo ${expectedName} actualizado.`,
+                    output: `> [${new Date().toLocaleTimeString()}] Archivo ${file.name} subido correctamente.`
                 }
             }))
-            // alert eliminado: solo feedback visual en consola
+            showToast(`Archivo ${expectedName} cargado con éxito`, 'success')
         } catch (err) {
             console.error('Upload error:', err)
             setResults(prev => ({
                 ...prev,
                 [expectedName + '_upload']: {
                     status: 'error',
-                    message: `Error al subir archivo: ${err.message}`,
-                    output: `> [${new Date().toLocaleTimeString()}] Error al subir archivo: ${err.message}`
+                    message: `Error: ${err.message}`,
+                    output: `> [${new Date().toLocaleTimeString()}] Error: ${err.message}`
                 }
             }))
-            // alert eliminado: solo feedback visual en consola
+            showToast(`Error de carga: ${err.message}`, 'error')
         } finally {
             setUploading(null)
-            e.target.value = null // Reset input
+            e.target.value = null
         }
     }
 
+    const triggerScript = (scriptId, label) => {
+        // setTimeout para que el confirm se muestre tras el ciclo de eventos (evita que React lo oculte)
+        setTimeout(() => {
+            const ok = window.confirm(
+                `Vas a ejecutar la rutina:\n\n` +
+                `  • ${label}\n\n` +
+                `Esta acción procesará los archivos maestros que estén cargados en el servidor y puede tardar varios minutos.\n` +
+                `Úsala solo cuando quieras actualizar los datos técnicos.\n\n` +
+                `¿Deseas continuar?`
+            )
+            if (!ok) return
+            setConfirmModal({ id: scriptId, label })
+            runScript(scriptId, label)
+        }, 0)
+    }
+
     const runScript = async (scriptId, label) => {
-        if (!window.confirm(`¿Estás seguro de iniciar el proceso: ${label}?`)) return
 
         setExecuting(scriptId)
         setLoading(true)
-        setResults(prev => ({ ...prev, [scriptId]: { status: 'running', message: 'Ejecutando...' } }))
+        setResults(prev => ({ ...prev, [scriptId]: { status: 'running', message: 'Procesando rutina...' } }))
 
         try {
             const data = await executeDataScript(scriptId)
@@ -80,18 +95,20 @@ export default function DataMaintenance({ showToast }) {
                 ...prev,
                 [scriptId]: { status: 'success', message: data.message, output: data.output }
             }))
+            showToast(`Rutina "${label}" completada con éxito`, 'success')
         } catch (err) {
             setResults(prev => ({
                 ...prev,
                 [scriptId]: { status: 'error', message: err.message }
             }))
+            showToast(`Error en la rutina: ${err.message}`, 'error')
         } finally {
             setLoading(false)
             setExecuting(null)
-            checkStatus() // Refresh file status
+            checkStatus()
+            setConfirmModal(null)
         }
     }
-
 
     return (
         <div className="flex flex-col gap-6 overflow-auto h-full p-2 lg:p-4 bg-[#e8ecf1]">
@@ -100,7 +117,7 @@ export default function DataMaintenance({ showToast }) {
                     <span>Módulo de Integración Oracle EBS - Mantenimiento</span>
                 </div>
                 <div className="p-4 bg-white border-b-2 border-[#c9930a]">
-                    <p className="text-sm text-gray-700 font-medium">Panel de control unificado para ingesta de artículos, extracción de grafos y transformación Mepal BOM.</p>
+                    <p className="text-sm text-gray-700 font-medium whitespace-nowrap overflow-hidden text-ellipsis">Panel de control unificado para ingesta de artículos, extracción de grafos y transformación Mepal BOM.</p>
                 </div>
             </div>
 
@@ -175,12 +192,6 @@ export default function DataMaintenance({ showToast }) {
                                         </div>
                                     </div>
                                 )}
-
-                                {s.files.length === 0 && !s.outputFile && (
-                                    <div className="bg-[#f8f9fa] border border-[#e5e7eb] p-3 rounded-sm text-center italic text-xs text-gray-500 shadow-inner">
-                                        Generación puramente en memoria.
-                                    </div>
-                                )}
                             </div>
 
                             <div className="pt-6 mt-auto border-t border-gray-200 flex flex-col gap-2">
@@ -193,7 +204,8 @@ export default function DataMaintenance({ showToast }) {
                                     </button>
                                 )}
                                 <button
-                                    onClick={() => runScript(s.id, s.title)}
+                                    type="button"
+                                    onClick={() => triggerScript(s.id, s.title)}
                                     disabled={loading || executing === s.id}
                                     className={`ebs-btn-primary w-full py-2 flex items-center justify-center font-bold tracking-wide shadow-sm disabled:opacity-60 disabled:cursor-not-allowed`}
                                 >
@@ -211,6 +223,7 @@ export default function DataMaintenance({ showToast }) {
                     </div>
                 ))}
             </div>
+
         </div>
     )
 }

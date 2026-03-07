@@ -2,10 +2,11 @@
 node_modules/
 client/node_modules/
 
-# Database (generated with npm run ingest)
+# Database and Backups
 integrador.db
 integrador.db-shm
 integrador.db-wal
+backend/logs/backups/
 
 # OS files
 .DS_Store
@@ -24,7 +25,15 @@ client/dist/
 
 # Env
 .env
-.env.local
+.env.*
+!.env.example
 LISTAS_TOT.csv
 planoind.csv
 planoind (1).csv
+
+backend/data/*.csv
+backend/data/*.txt
+backend/data/*.xlsb
+backend/data/*.db
+backend/data/*.db-shm
+backend/data/*.db-wal

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   fetchPedidos, fetchPedido, createPedido, updatePedido, deletePedido,
-  downloadExcel, emptyItem, emptyPuesto, getUser, logout
+  downloadExcel, emptyItem, emptyPuesto, getUser, logout, isEmptyItem
 } from './api'
 import ItemsTable from './components/ItemsTable'
 import Toast, { useToast } from './components/Toast'
@@ -26,6 +26,7 @@ export default function App() {
   const [form, setForm] = useState(newForm(user?.nombre || ''))
   const [puestos, setPuestos] = useState([{ ...emptyPuesto(1), nombre: 'PUESTO 1' }])
   const [search, setSearch] = useState('')
+  const [designerFilter, setDesignerFilter] = useState('') // New state for admin filter
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [currentView, setCurrentView] = useState('pedidos') // 'pedidos' | 'usuarios' | 'mantenimiento'
   const [saving, setSaving] = useState(false)
@@ -69,7 +70,14 @@ export default function App() {
         disenador: data.disenador || '',
         asesor: data.asesor || ''
       })
-      setPuestos(data.puestos || [{ ...emptyPuesto(1), nombre: 'PUESTO 1' }])
+      setPuestos((data.puestos || []).map(p => ({
+        ...p,
+        _id: p._id || p.id || crypto.randomUUID(),
+        items: (p.items || []).map(it => ({
+          ...it,
+          _id: it._id || it.id || crypto.randomUUID()
+        }))
+      })))
       setCurrentId(id)
       setHeaderErrors({})
       setInvalidCells(new Set())
@@ -93,7 +101,7 @@ export default function App() {
       logout()
       setUser(null)
       // Usar setTimeout para evitar conflictos si show intenta actualizar el estado al mismo tiempo
-      setTimeout(() => show('Tu sesión expiró. Por favor, inicia sesión de nuevo.', 'error'), 50)
+      setTimeout(() => show('Tu sesión expiró. Por favor, inicia sesión de nuevo.', 'error', crypto.randomUUID()), 50)
     }
     window.addEventListener('unauthorized', handleUnauthorized)
     return () => window.removeEventListener('unauthorized', handleUnauthorized)
@@ -125,26 +133,75 @@ export default function App() {
     }
 
     // Build payload
-    const payload = { form, puestos: puestos.map(p => ({ nombre: p.nombre, items: p.items })) }
-
-    // Remove empty items
+    // 1. Process items / Remove empty ones
     let emptyRowsRemoved = 0
-    payload.puestos = payload.puestos.map(p => {
+    const processedPuestos = puestos.map(p => {
       const filtered = p.items.filter(it => !isEmptyItem(it))
       emptyRowsRemoved += p.items.length - filtered.length
-      return { ...p, items: filtered.length > 0 ? filtered : [emptyItem()] }
+      return {
+        ...p,
+        items: filtered.length > 0 ? filtered : [emptyItem()]
+      }
     })
+
+    // Actualizamos el estado para reflejar la limpieza visualmente si se desea, 
+    // pero lo más importante es el payload.
+    // setPuestos(processedPuestos)
 
     if (emptyRowsRemoved > 0) {
       show(`${emptyRowsRemoved} fila${emptyRowsRemoved > 1 ? 's' : ''} vacía${emptyRowsRemoved > 1 ? 's' : ''} eliminada${emptyRowsRemoved > 1 ? 's' : ''}`, 'info')
     }
 
+    // ── STRICT validations (Mandatory, cannot be skipped) ──
+
+    // 1. Quantities Validation
+    let mandatoryQtyErrors = []
+    processedPuestos.forEach((puesto) => {
+      const incomplete = puesto.items.filter(it => {
+        if (isEmptyItem(it)) return false
+        const unit = parseFloat(it.cantidad_unitaria)
+        const tipo = it.cantidad_tipologia
+        return isNaN(unit) || unit <= 0 || !tipo || tipo === ''
+      })
+      if (incomplete.length > 0) {
+        mandatoryQtyErrors.push(`${puesto.nombre}: ${incomplete.length} ítem(s) con cantidades incompletas (Unitario y Tipología son requeridos)`)
+      }
+    })
+
+    if (mandatoryQtyErrors.length > 0) {
+      show(mandatoryQtyErrors[0], 'error')
+      return
+    }
+
+    // 2. Materials Validation (Acabados)
+    let materialErrors = []
+    const materialLabels = { pintura: 'Pintura', formica: 'Fórmica', supercor: 'Supercor', canto: 'Canto', madecanto: 'Madecanto', vidrio: 'Vidrio', tela: 'Tela' }
+    processedPuestos.forEach((puesto, pIdx) => {
+      const matsMap = puestosMateriales[pIdx]
+      if (!matsMap) return
+      puesto.items.forEach((item) => {
+        const itemId = item._id
+        const mats = matsMap[itemId]
+        if (!mats) return
+        const missing = []
+        mats.forEach(tipo => {
+          if (!item[tipo]?.trim()) missing.push(materialLabels[tipo] || tipo)
+        })
+        if (missing.length > 0) {
+          materialErrors.push(`${puesto.nombre} → ${item.codigo || 'Sin código'}: falta ${missing.join(', ')}`)
+        }
+      })
+    })
+
+    if (materialErrors.length > 0) {
+      show(materialErrors[0], 'error')
+      return
+    }
+
     // ── SOFT validations (warnings — show modal, user decides) ──
     if (!forceSkipWarnings) {
       const warnings = []
-
-      // Check items without code
-      puestos.forEach((puesto, pIdx) => {
+      processedPuestos.forEach((puesto) => {
         const emptyCodeItems = puesto.items.filter(it => !it.codigo?.trim() && (it.descripcion?.trim() || it.nota_h || it.nota_l || it.nota_prof))
         if (emptyCodeItems.length > 0) {
           warnings.push({
@@ -155,43 +212,8 @@ export default function App() {
         }
       })
 
-      // Check items with code but without cantidad_unitaria
-      puestos.forEach((puesto) => {
-        const noQtyItems = puesto.items.filter(it => it.codigo?.trim() && (!it.cantidad_unitaria || parseFloat(it.cantidad_unitaria) <= 0))
-        if (noQtyItems.length > 0) {
-          warnings.push({
-            type: 'missing-qty',
-            icon: '🔢',
-            message: `${puesto.nombre}: ${noQtyItems.length} ítem(s) sin cantidad unitaria`
-          })
-        }
-      })
-
-      // Check required materials not filled
-      const materialLabels = { pintura: 'Pintura', formica: 'Fórmica', supercor: 'Supercor', canto: 'Canto', madecanto: 'Madecanto', vidrio: 'Vidrio', tela: 'Tela' }
-      puestos.forEach((puesto, pIdx) => {
-        const matsMap = puestosMateriales[pIdx]
-        if (!matsMap) return
-        puesto.items.forEach((item) => {
-          const itemId = item._id
-          const mats = matsMap[itemId]
-          if (!mats) return
-          const missing = []
-          mats.forEach(tipo => {
-            if (!item[tipo]?.trim()) missing.push(materialLabels[tipo] || tipo)
-          })
-          if (missing.length > 0) {
-            warnings.push({
-              type: 'missing-material',
-              icon: '🎨',
-              message: `${puesto.nombre} → ${item.codigo || 'Sin código'}: falta ${missing.join(', ')}`
-            })
-          }
-        })
-      })
-
       if (warnings.length > 0) {
-        setWarningModal({ warnings, payload })
+        setWarningModal({ warnings, payload: { ...form, puestos: processedPuestos } })
         warningRef.current?.showModal()
         return
       }
@@ -199,31 +221,44 @@ export default function App() {
 
     // ── Actually save ──
     setSaving(true)
+    const finalPayload = {
+      ...form,
+      puestos: processedPuestos.map(p => ({
+        nombre: p.nombre,
+        items: p.items.map(it => {
+          const { _id, id, puesto_id, ...clean } = it
+          return clean
+        })
+      }))
+    }
+
     try {
       if (currentId) {
-        await updatePedido(currentId, payload)
-        show('Pedido actualizado ✓', 'success')
+        await updatePedido(currentId, finalPayload)
+        show('Pedido actualizado con éxito ✓', 'success')
       } else {
-        const res = await createPedido(payload)
+        const res = await createPedido(finalPayload)
         setCurrentId(res.id)
-        show('Pedido guardado ✓', 'success')
+        show('Pedido guardado con éxito ✓', 'success')
       }
+
+      const snapshotPuestos = processedPuestos.map(p => ({
+        nombre: p.nombre,
+        items: p.items.map(it => {
+          const { _id, id, puesto_id, ...clean } = it
+          return clean
+        })
+      }))
+      setSavedSnapshot(JSON.stringify({ form, puestos: snapshotPuestos }))
+      setPuestos(processedPuestos)
       await loadList()
-      // Remove empty rows from local state so they disappear
-      if (emptyRowsRemoved > 0) {
-        setPuestos(prev => prev.map(p => {
-          const kept = p.items.filter(it => !isEmptyItem(it))
-          return { ...p, items: kept.length > 0 ? kept : [emptyItem()] }
-        }))
-      }
-      // Update snapshot after successful save
-      const cleanPuestos = puestos.map(p => ({ nombre: p.nombre, items: p.items.filter(it => !isEmptyItem(it)).map(it => ({ codigo: it.codigo, descripcion: it.descripcion, nota_h: it.nota_h, nota_l: it.nota_l, nota_prof: it.nota_prof, nota_adicional: it.nota_adicional, cantidad_unitaria: it.cantidad_unitaria, cantidad_tipologia: it.cantidad_tipologia, cantidad_total: it.cantidad_total, pintura: it.pintura, acabados_adicional: it.acabados_adicional, formica: it.formica, supercor: it.supercor, canto: it.canto, madecanto: it.madecanto, vidrio: it.vidrio, tela: it.tela, render: it.render })) }))
-      setSavedSnapshot(JSON.stringify({ form, puestos: cleanPuestos }))
     } catch (err) {
+      console.error('Save error:', err)
       const msg = err?.message || 'Error al guardar'
       show(msg, 'error')
+    } finally {
+      setSaving(false)
     }
-    finally { setSaving(false) }
   }
 
   const confirmDelete = async () => {
@@ -233,7 +268,9 @@ export default function App() {
       setDeleteModal(false)
       newPedido()
       await loadList()
-    } catch { show('Error al eliminar', 'error') }
+    } catch {
+      show('Error al eliminar', 'error')
+    }
   }
 
   const handleExport = async () => {
@@ -284,12 +321,26 @@ export default function App() {
     setPuestos(prev => prev.map((p, i) => i === idx ? { ...p, items } : p))
   }
 
-  const filtered = pedidos.filter(p =>
-    !search ||
-    (p.numero_pedido || '').toLowerCase().includes(search.toLowerCase()) ||
-    (p.cliente || '').toLowerCase().includes(search.toLowerCase()) ||
-    (p.proyecto || '').toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = pedidos.filter(p => {
+    const textMatch = !search ||
+      (p.numero_pedido || '').toLowerCase().includes(search.toLowerCase()) ||
+      (p.cliente || '').toLowerCase().includes(search.toLowerCase()) ||
+      (p.proyecto || '').toLowerCase().includes(search.toLowerCase());
+
+    // If the filter is explicitly set, check if p.disenador matches.
+    // If it's empty/falsy, let it pass (to show all).
+    const isFilterActive = designerFilter && designerFilter.trim() !== '';
+    const designerMatch = isFilterActive ? (p.disenador === designerFilter) : true;
+
+    return textMatch && designerMatch;
+  });
+
+  // Extract unique designers for the filter dropdown (Admins only)
+  const uniqueDesigners = useMemo(() => {
+    if (user?.rol !== 'admin') return [];
+    const designers = pedidos.map(p => p.disenador).filter(d => d && d.trim());
+    return [...new Set(designers)].sort();
+  }, [pedidos, user]);
 
   const totalItems = puestos.reduce((sum, p) => sum + p.items.length, 0)
   const pageTitle = currentId ? `Pedido ${form.numero_pedido || currentId}` : 'Nuevo Pedido'
@@ -439,20 +490,28 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="px-3 py-2 border-b border-gray-300">
+              <div className="px-3 py-2 border-b border-gray-300 flex flex-col gap-2">
                 <input value={search} onChange={e => setSearch(e.target.value)}
                   placeholder="N° pedido, cliente o proyecto…"
                   className="ebs-input w-full px-2 py-1.5 text-[11px]" />
+                {user?.rol === 'admin' && uniqueDesigners.length > 0 && (
+                  <select
+                    value={designerFilter}
+                    onChange={e => setDesignerFilter(e.target.value)}
+                    className="ebs-input w-full px-2 py-1.5 text-[11px] bg-white cursor-pointer"
+                  >
+                    <option value="">Todos los diseñadores</option>
+                    {uniqueDesigners.map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               <div className="flex-1 overflow-y-auto">
                 {filtered.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-[11px] text-gray-400">Sin resultados</p>
-                    {/* Depuración: mostrar si hay pedidos pero el filtro los oculta */}
-                    {pedidos.length > 0 && (
-                      <p className="text-[11px] text-red-500 mt-2 font-bold">Pedidos cargados: {pedidos.length} (el filtro de búsqueda los está ocultando)</p>
-                    )}
+                    <p className="text-[12px] font-medium text-gray-400">Sin resultados</p>
                   </div>
                 ) : filtered.map(p => (
                   <button key={p.id} onClick={() => openPedido(p.id)}

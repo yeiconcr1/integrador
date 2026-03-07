@@ -171,13 +171,9 @@ def extraer_boms_principales(registros):
     return codigos
 
 if __name__ == "__main__":
-    archivo_csv = "LISTAS_TOT.csv"
-    archivo_planoind = "planoind.csv"
-    archivo_salida = "BOMS_indentados.csv"
-    
-    # Verificar si existe planoind.csv para usar solo esos códigos
-    import os
-    usar_planoind = os.path.exists(archivo_planoind)
+    archivo_csv = "backend/data/LISTAS_TOT.csv"
+    archivo_planoind = "backend/data/planoind.csv"
+    archivo_salida = "backend/data/BOMS_indentados.csv"
     
     # Cargar todos los registros del CSV una sola vez
     print(f"\n{'='*60}")
@@ -186,12 +182,8 @@ if __name__ == "__main__":
     registros = cargar_csv(archivo_csv)
     
     # Decidir qué códigos procesar
-    if usar_planoind:
-        print(f"\nUsando códigos desde {archivo_planoind}")
-        codigos_bom = leer_codigos_planoind(archivo_planoind)
-    else:
-        print("\nNo se encontró planoind.csv, procesando TODOS los BOMs del archivo")
-        codigos_bom = extraer_boms_principales(registros)
+    print("\nProcesando TODOS los BOMs del archivo maestro...")
+    codigos_bom = extraer_boms_principales(registros)
     
     # Construir jerarquía completa
     print("\nConstruyendo jerarquía de todos los BOMs...")

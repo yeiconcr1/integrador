@@ -1,0 +1,305 @@
+
+> integrador@1.0.0 dev
+> concurrently "node server.js" "npm run dev --prefix client"
+
+[1] 
+[1] > client@0.0.0 dev
+[1] > vite
+[1] 
+[0] 
+[0] 🚀 Integrador App corriendo en http://localhost:3000
+[0] 
+[1] 
+[1]   VITE v7.3.1  ready in 393 ms
+[1] 
+[1]   ➜  Local:   http://localhost:5173/
+[1]   ➜  Network: use --host to expose
+[0] ✅ Archivo PT.txt actualizado exitosamente desde subida temporal.
+[0] ✅ Archivo MP.txt actualizado exitosamente desde subida temporal.
+[1] 9:51:29 PM [vite] (client) hmr update /src/components/DataMaintenance.jsx, /src/index.css
+[1] 9:51:29 PM [vite] Internal server error: /Users/yeiconcr/Desktop/integrador/client/src/components/DataMaintenance.jsx: 'return' outside of function. (102:0)
+[1] 
+[1]   100 |
+[1]   101 |
+[1] > 102 | return (
+[1]       | ^
+[1]   103 |     <div className="flex flex-col gap-6 overflow-auto h-full p-2 lg:p-4 bg-[#e8ecf1]">
+[1]   104 |         <div className="ebs-form-region overflow-hidden flex flex-col mb-2">
+[1]   105 |             <div className="ebs-form-region-header text-sm py-2 px-3 flex items-center justify-between shadow-sm">
+[1]   Plugin: vite:react-babel
+[1]   File: /Users/yeiconcr/Desktop/integrador/client/src/components/DataMaintenance.jsx:102:0
+[1]   100 |  
+[1]   101 |  
+[1]   102 |  return (
+[1]       |  ^
+[1]   103 |      <div className="flex flex-col gap-6 overflow-auto h-full p-2 lg:p-4 bg-[#e8ecf1]">
+[1]   104 |          <div className="ebs-form-region overflow-hidden flex flex-col mb-2">
+[1]       at constructor (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:365:19)
+[1]       at JSXParserMixin.raise (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:6599:19)
+[1]       at JSXParserMixin.parseReturnStatement (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:13136:12)
+[1]       at JSXParserMixin.parseStatementContent (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12798:21)
+[1]       at JSXParserMixin.parseStatementLike (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12767:17)
+[1]       at JSXParserMixin.parseModuleItem (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12744:17)
+[1]       at JSXParserMixin.parseBlockOrModuleBlockBody (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:13316:36)
+[1]       at JSXParserMixin.parseBlockBody (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:13309:10)
+[1]       at JSXParserMixin.parseProgram (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12622:10)
+[1]       at JSXParserMixin.parseTopLevel (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12612:25)
+[1]       at JSXParserMixin.parse (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:14488:25)
+[1]       at parse (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:14522:38)
+[1]       at parser (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/parser/index.js:41:34)
+[1]       at parser.next (<anonymous>)
+[1]       at normalizeFile (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/transformation/normalize-file.js:64:37)
+[1]       at normalizeFile.next (<anonymous>)
+[1]       at run (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/transformation/index.js:22:50)
+[1]       at run.next (<anonymous>)
+[1]       at transform (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/transform.js:22:33)
+[1]       at transform.next (<anonymous>)
+[1]       at step (/Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:261:32)
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:273:13
+[1]       at async.call.result.err.err (/Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:223:11)
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:189:28
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/gensync-utils/async.js:67:7
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:113:33
+[1]       at step (/Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:287:14)
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:273:13
+[1]       at async.call.result.err.err (/Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:223:11)
+[1] 9:51:29 PM [vite] Internal server error: /Users/yeiconcr/Desktop/integrador/client/src/components/DataMaintenance.jsx: 'return' outside of function. (102:0)
+[1] 
+[1]   100 |
+[1]   101 |
+[1] > 102 | return (
+[1]       | ^
+[1]   103 |     <div className="flex flex-col gap-6 overflow-auto h-full p-2 lg:p-4 bg-[#e8ecf1]">
+[1]   104 |         <div className="ebs-form-region overflow-hidden flex flex-col mb-2">
+[1]   105 |             <div className="ebs-form-region-header text-sm py-2 px-3 flex items-center justify-between shadow-sm">
+[1]   Plugin: vite:react-babel
+[1]   File: /Users/yeiconcr/Desktop/integrador/client/src/components/DataMaintenance.jsx:102:0
+[1]   100 |  
+[1]   101 |  
+[1]   102 |  return (
+[1]       |  ^
+[1]   103 |      <div className="flex flex-col gap-6 overflow-auto h-full p-2 lg:p-4 bg-[#e8ecf1]">
+[1]   104 |          <div className="ebs-form-region overflow-hidden flex flex-col mb-2">
+[1]       at constructor (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:365:19)
+[1]       at JSXParserMixin.raise (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:6599:19)
+[1]       at JSXParserMixin.parseReturnStatement (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:13136:12)
+[1]       at JSXParserMixin.parseStatementContent (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12798:21)
+[1]       at JSXParserMixin.parseStatementLike (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12767:17)
+[1]       at JSXParserMixin.parseModuleItem (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12744:17)
+[1]       at JSXParserMixin.parseBlockOrModuleBlockBody (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:13316:36)
+[1]       at JSXParserMixin.parseBlockBody (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:13309:10)
+[1]       at JSXParserMixin.parseProgram (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12622:10)
+[1]       at JSXParserMixin.parseTopLevel (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12612:25)
+[1]       at JSXParserMixin.parse (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:14488:25)
+[1]       at parse (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:14522:38)
+[1]       at parser (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/parser/index.js:41:34)
+[1]       at parser.next (<anonymous>)
+[1]       at normalizeFile (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/transformation/normalize-file.js:64:37)
+[1]       at normalizeFile.next (<anonymous>)
+[1]       at run (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/transformation/index.js:22:50)
+[1]       at run.next (<anonymous>)
+[1]       at transform (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/transform.js:22:33)
+[1]       at transform.next (<anonymous>)
+[1]       at step (/Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:261:32)
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:273:13
+[1]       at async.call.result.err.err (/Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:223:11)
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:189:28
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/gensync-utils/async.js:67:7
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:113:33
+[1]       at step (/Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:287:14)
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:273:13
+[1]       at async.call.result.err.err (/Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:223:11)
+[1] 9:51:29 PM [vite] Internal server error: /Users/yeiconcr/Desktop/integrador/client/src/components/DataMaintenance.jsx: 'return' outside of function. (102:0)
+[1] 
+[1]   100 |
+[1]   101 |
+[1] > 102 | return (
+[1]       | ^
+[1]   103 |     <div className="flex flex-col gap-6 overflow-auto h-full p-2 lg:p-4 bg-[#e8ecf1]">
+[1]   104 |         <div className="ebs-form-region overflow-hidden flex flex-col mb-2">
+[1]   105 |             <div className="ebs-form-region-header text-sm py-2 px-3 flex items-center justify-between shadow-sm">
+[1]   Plugin: vite:react-babel
+[1]   File: /Users/yeiconcr/Desktop/integrador/client/src/components/DataMaintenance.jsx:102:0
+[1]   100 |  
+[1]   101 |  
+[1]   102 |  return (
+[1]       |  ^
+[1]   103 |      <div className="flex flex-col gap-6 overflow-auto h-full p-2 lg:p-4 bg-[#e8ecf1]">
+[1]   104 |          <div className="ebs-form-region overflow-hidden flex flex-col mb-2">
+[1]       at constructor (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:365:19)
+[1]       at JSXParserMixin.raise (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:6599:19)
+[1]       at JSXParserMixin.parseReturnStatement (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:13136:12)
+[1]       at JSXParserMixin.parseStatementContent (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12798:21)
+[1]       at JSXParserMixin.parseStatementLike (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12767:17)
+[1]       at JSXParserMixin.parseModuleItem (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12744:17)
+[1]       at JSXParserMixin.parseBlockOrModuleBlockBody (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:13316:36)
+[1]       at JSXParserMixin.parseBlockBody (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:13309:10)
+[1]       at JSXParserMixin.parseProgram (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12622:10)
+[1]       at JSXParserMixin.parseTopLevel (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12612:25)
+[1]       at JSXParserMixin.parse (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:14488:25)
+[1]       at parse (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:14522:38)
+[1]       at parser (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/parser/index.js:41:34)
+[1]       at parser.next (<anonymous>)
+[1]       at normalizeFile (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/transformation/normalize-file.js:64:37)
+[1]       at normalizeFile.next (<anonymous>)
+[1]       at run (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/transformation/index.js:22:50)
+[1]       at run.next (<anonymous>)
+[1]       at transform (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/transform.js:22:33)
+[1]       at transform.next (<anonymous>)
+[1]       at step (/Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:261:32)
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:273:13
+[1]       at async.call.result.err.err (/Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:223:11)
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:189:28
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/gensync-utils/async.js:67:7
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:113:33
+[1]       at step (/Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:287:14)
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:273:13
+[1]       at async.call.result.err.err (/Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:223:11)
+[1] 9:52:13 PM [vite] (client) hmr update /src/components/DataMaintenance.jsx, /src/index.css
+[0] ✅ Archivo PT.txt actualizado exitosamente desde subida temporal.
+[0] ✅ Archivo MP.txt actualizado exitosamente desde subida temporal.
+[0] ✅ Archivo PT.txt actualizado exitosamente desde subida temporal.
+[0] ✅ Archivo MP.txt actualizado exitosamente desde subida temporal.
+[1] 9:56:02 PM [vite] (client) hmr update /src/components/DataMaintenance.jsx, /src/index.css
+[1] 9:56:38 PM [vite] (client) hmr update /src/components/DataMaintenance.jsx, /src/index.css
+[1] 9:56:38 PM [vite] Internal server error: /Users/yeiconcr/Desktop/integrador/client/src/components/DataMaintenance.jsx: 'return' outside of function. (102:0)
+[1] 
+[1]   100 |
+[1]   101 |
+[1] > 102 | return (
+[1]       | ^
+[1]   103 |     <div className="flex flex-col gap-6 overflow-auto h-full p-2 lg:p-4 bg-[#e8ecf1]">
+[1]   104 |         <div className="ebs-form-region overflow-hidden flex flex-col mb-2">
+[1]   105 |             <div className="ebs-form-region-header text-sm py-2 px-3 flex items-center justify-between shadow-sm">
+[1]   Plugin: vite:react-babel
+[1]   File: /Users/yeiconcr/Desktop/integrador/client/src/components/DataMaintenance.jsx:102:0
+[1]   100 |  
+[1]   101 |  
+[1]   102 |  return (
+[1]       |  ^
+[1]   103 |      <div className="flex flex-col gap-6 overflow-auto h-full p-2 lg:p-4 bg-[#e8ecf1]">
+[1]   104 |          <div className="ebs-form-region overflow-hidden flex flex-col mb-2">
+[1]       at constructor (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:365:19)
+[1]       at JSXParserMixin.raise (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:6599:19)
+[1]       at JSXParserMixin.parseReturnStatement (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:13136:12)
+[1]       at JSXParserMixin.parseStatementContent (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12798:21)
+[1]       at JSXParserMixin.parseStatementLike (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12767:17)
+[1]       at JSXParserMixin.parseModuleItem (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12744:17)
+[1]       at JSXParserMixin.parseBlockOrModuleBlockBody (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:13316:36)
+[1]       at JSXParserMixin.parseBlockBody (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:13309:10)
+[1]       at JSXParserMixin.parseProgram (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12622:10)
+[1]       at JSXParserMixin.parseTopLevel (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12612:25)
+[1]       at JSXParserMixin.parse (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:14488:25)
+[1]       at parse (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:14522:38)
+[1]       at parser (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/parser/index.js:41:34)
+[1]       at parser.next (<anonymous>)
+[1]       at normalizeFile (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/transformation/normalize-file.js:64:37)
+[1]       at normalizeFile.next (<anonymous>)
+[1]       at run (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/transformation/index.js:22:50)
+[1]       at run.next (<anonymous>)
+[1]       at transform (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/transform.js:22:33)
+[1]       at transform.next (<anonymous>)
+[1]       at step (/Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:261:32)
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:273:13
+[1]       at async.call.result.err.err (/Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:223:11)
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:189:28
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/gensync-utils/async.js:67:7
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:113:33
+[1]       at step (/Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:287:14)
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:273:13
+[1]       at async.call.result.err.err (/Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:223:11)
+[1] 9:56:38 PM [vite] Internal server error: /Users/yeiconcr/Desktop/integrador/client/src/components/DataMaintenance.jsx: 'return' outside of function. (102:0)
+[1] 
+[1]   100 |
+[1]   101 |
+[1] > 102 | return (
+[1]       | ^
+[1]   103 |     <div className="flex flex-col gap-6 overflow-auto h-full p-2 lg:p-4 bg-[#e8ecf1]">
+[1]   104 |         <div className="ebs-form-region overflow-hidden flex flex-col mb-2">
+[1]   105 |             <div className="ebs-form-region-header text-sm py-2 px-3 flex items-center justify-between shadow-sm">
+[1]   Plugin: vite:react-babel
+[1]   File: /Users/yeiconcr/Desktop/integrador/client/src/components/DataMaintenance.jsx:102:0
+[1]   100 |  
+[1]   101 |  
+[1]   102 |  return (
+[1]       |  ^
+[1]   103 |      <div className="flex flex-col gap-6 overflow-auto h-full p-2 lg:p-4 bg-[#e8ecf1]">
+[1]   104 |          <div className="ebs-form-region overflow-hidden flex flex-col mb-2">
+[1]       at constructor (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:365:19)
+[1]       at JSXParserMixin.raise (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:6599:19)
+[1]       at JSXParserMixin.parseReturnStatement (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:13136:12)
+[1]       at JSXParserMixin.parseStatementContent (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12798:21)
+[1]       at JSXParserMixin.parseStatementLike (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12767:17)
+[1]       at JSXParserMixin.parseModuleItem (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12744:17)
+[1]       at JSXParserMixin.parseBlockOrModuleBlockBody (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:13316:36)
+[1]       at JSXParserMixin.parseBlockBody (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:13309:10)
+[1]       at JSXParserMixin.parseProgram (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12622:10)
+[1]       at JSXParserMixin.parseTopLevel (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12612:25)
+[1]       at JSXParserMixin.parse (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:14488:25)
+[1]       at parse (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:14522:38)
+[1]       at parser (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/parser/index.js:41:34)
+[1]       at parser.next (<anonymous>)
+[1]       at normalizeFile (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/transformation/normalize-file.js:64:37)
+[1]       at normalizeFile.next (<anonymous>)
+[1]       at run (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/transformation/index.js:22:50)
+[1]       at run.next (<anonymous>)
+[1]       at transform (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/transform.js:22:33)
+[1]       at transform.next (<anonymous>)
+[1]       at step (/Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:261:32)
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:273:13
+[1]       at async.call.result.err.err (/Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:223:11)
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:189:28
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/gensync-utils/async.js:67:7
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:113:33
+[1]       at step (/Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:287:14)
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:273:13
+[1]       at async.call.result.err.err (/Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:223:11)
+[1] 9:56:39 PM [vite] Internal server error: /Users/yeiconcr/Desktop/integrador/client/src/components/DataMaintenance.jsx: 'return' outside of function. (102:0)
+[1] 
+[1]   100 |
+[1]   101 |
+[1] > 102 | return (
+[1]       | ^
+[1]   103 |     <div className="flex flex-col gap-6 overflow-auto h-full p-2 lg:p-4 bg-[#e8ecf1]">
+[1]   104 |         <div className="ebs-form-region overflow-hidden flex flex-col mb-2">
+[1]   105 |             <div className="ebs-form-region-header text-sm py-2 px-3 flex items-center justify-between shadow-sm">
+[1]   Plugin: vite:react-babel
+[1]   File: /Users/yeiconcr/Desktop/integrador/client/src/components/DataMaintenance.jsx:102:0
+[1]   100 |  
+[1]   101 |  
+[1]   102 |  return (
+[1]       |  ^
+[1]   103 |      <div className="flex flex-col gap-6 overflow-auto h-full p-2 lg:p-4 bg-[#e8ecf1]">
+[1]   104 |          <div className="ebs-form-region overflow-hidden flex flex-col mb-2">
+[1]       at constructor (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:365:19)
+[1]       at JSXParserMixin.raise (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:6599:19)
+[1]       at JSXParserMixin.parseReturnStatement (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:13136:12)
+[1]       at JSXParserMixin.parseStatementContent (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12798:21)
+[1]       at JSXParserMixin.parseStatementLike (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12767:17)
+[1]       at JSXParserMixin.parseModuleItem (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12744:17)
+[1]       at JSXParserMixin.parseBlockOrModuleBlockBody (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:13316:36)
+[1]       at JSXParserMixin.parseBlockBody (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:13309:10)
+[1]       at JSXParserMixin.parseProgram (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12622:10)
+[1]       at JSXParserMixin.parseTopLevel (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:12612:25)
+[1]       at JSXParserMixin.parse (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:14488:25)
+[1]       at parse (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/parser/lib/index.js:14522:38)
+[1]       at parser (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/parser/index.js:41:34)
+[1]       at parser.next (<anonymous>)
+[1]       at normalizeFile (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/transformation/normalize-file.js:64:37)
+[1]       at normalizeFile.next (<anonymous>)
+[1]       at run (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/transformation/index.js:22:50)
+[1]       at run.next (<anonymous>)
+[1]       at transform (/Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/transform.js:22:33)
+[1]       at transform.next (<anonymous>)
+[1]       at step (/Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:261:32)
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:273:13
+[1]       at async.call.result.err.err (/Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:223:11)
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:189:28
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/@babel/core/lib/gensync-utils/async.js:67:7
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:113:33
+[1]       at step (/Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:287:14)
+[1]       at /Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:273:13
+[1]       at async.call.result.err.err (/Users/yeiconcr/Desktop/integrador/client/node_modules/gensync/index.js:223:11)
+[1] 9:57:40 PM [vite] (client) hmr update /src/components/DataMaintenance.jsx, /src/index.css
+[1] npm run dev --prefix client exited with code SIGHUP
+[0] node server.js exited with code SIGHUP

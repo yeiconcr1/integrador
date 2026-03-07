@@ -137,7 +137,7 @@ export function useToast() {
     const [toasts, setToasts] = useState([])
     const remove = (id) => setToasts(t => t.filter(x => x.id !== id))
     const show = (message, type = 'info') => {
-        const id = Date.now()
+        const id = crypto.randomUUID()
         setToasts(t => [...t, { id, message, type }])
         // Auto-remove handled by ToastItem component
     }

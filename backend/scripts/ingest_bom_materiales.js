@@ -19,27 +19,27 @@ const readline = require('readline');
 const Database = require('better-sqlite3');
 const path = require('path');
 
-const DB_PATH = path.join(__dirname, '..', 'integrador.db');
-const CSV_PATH = path.join(__dirname, '..', 'LISTAS_TOT.csv');
+const DB_PATH = path.join(__dirname, '..', 'data', 'integrador.db');
+const CSV_PATH = path.join(__dirname, '..', 'data', 'LISTAS_TOT.csv');
 
 // ── Mapeo: prefijo de descripción genérica → tipo de material del integrador ──
 const MATERIAL_MAP = [
-    { prefix: 'GENERICO FORMICA',     tipo: 'formica' },
-    { prefix: 'GENERICO ACRILPRESS',  tipo: 'formica' },
-    { prefix: 'GENERICO CANTO',       tipo: 'canto' },
-    { prefix: 'GENERICO CINTA',       tipo: 'canto' },
-    { prefix: 'GENERICO TELA',        tipo: 'tela' },
-    { prefix: 'GENERICO POLYESTER',   tipo: 'tela' },
-    { prefix: 'GENERICO ALFOMBRA',    tipo: 'tela' },
-    { prefix: 'GENERICO VIDRIO',      tipo: 'vidrio' },
-    { prefix: 'GENERICO SUPERCOR',    tipo: 'supercor' },
-    { prefix: 'GENERICO SUPERKRAFT',  tipo: 'supercor' },
-    { prefix: 'GENERICO DURALAM',     tipo: 'supercor' },
-    { prefix: 'GENERICO SUPERFONDO',  tipo: 'supercor' },
-    { prefix: 'GENERICO MADECANTO',   tipo: 'madecanto' },
-    { prefix: 'GENERICO MADEFILM',    tipo: 'madecanto' },
-    { prefix: 'GENERICO PINTURA',     tipo: 'pintura' },
-    { prefix: 'GENERICO PELICULA',    tipo: 'pintura' },
+    { prefix: 'GENERICO FORMICA', tipo: 'formica' },
+    { prefix: 'GENERICO ACRILPRESS', tipo: 'formica' },
+    { prefix: 'GENERICO CANTO', tipo: 'canto' },
+    { prefix: 'GENERICO CINTA', tipo: 'canto' },
+    { prefix: 'GENERICO TELA', tipo: 'tela' },
+    { prefix: 'GENERICO POLYESTER', tipo: 'tela' },
+    { prefix: 'GENERICO ALFOMBRA', tipo: 'tela' },
+    { prefix: 'GENERICO VIDRIO', tipo: 'vidrio' },
+    { prefix: 'GENERICO SUPERCOR', tipo: 'supercor' },
+    { prefix: 'GENERICO SUPERKRAFT', tipo: 'supercor' },
+    { prefix: 'GENERICO DURALAM', tipo: 'supercor' },
+    { prefix: 'GENERICO SUPERFONDO', tipo: 'supercor' },
+    { prefix: 'GENERICO MADECANTO', tipo: 'madecanto' },
+    { prefix: 'GENERICO MADEFILM', tipo: 'madecanto' },
+    { prefix: 'GENERICO PINTURA', tipo: 'pintura' },
+    { prefix: 'GENERICO PELICULA', tipo: 'pintura' },
 ];
 
 function detectMaterialType(descripcion) {
@@ -86,7 +86,7 @@ async function run() {
     // PASADA 1: Construir grafo hijo→padres y detectar genéricos
     // ═══════════════════════════════════════════════════════════
     console.log('Pasada 1: Construyendo grafo de jerarquía...');
-    
+
     const childToParents = new Map(); // componente → Set de padres
     const genericEntries = [];        // [{padre, tipo}] materiales genéricos encontrados
 

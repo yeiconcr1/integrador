@@ -3,7 +3,7 @@ const fs = require('fs');
 const XLSX = require('xlsx');
 const Database = require('better-sqlite3');
 
-const ROOT = path.join(__dirname, '..');
+const ROOT = path.join(__dirname, '..', 'data');
 const db = new Database(path.join(ROOT, 'integrador.db'));
 db.pragma('foreign_keys = ON');
 

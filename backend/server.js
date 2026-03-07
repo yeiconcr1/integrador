@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const Database = require('better-sqlite3');
 const ExcelJS = require('exceljs');
@@ -6,26 +7,40 @@ const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const helmet = require('helmet');
+const compression = require('compression');
+const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'integrador_super_secret_key_123';
+if (process.env.NODE_ENV === 'production' && JWT_SECRET === 'integrador_super_secret_key_123') {
+    console.error('❌ JWT_SECRET no está definido en producción. Configura la variable de entorno JWT_SECRET.');
+    process.exit(1);
+}
 
 const app = express();
 const PORT = 3000;
 
 // Middleware
+app.use(helmet({
+    contentSecurityPolicy: false // Disabled for simplicity with some local React builds
+}));
+app.use(compression()); // Gzip compression
+app.use(morgan('combined')); // HTTP standard logging
 app.use(cors());
 app.use(express.json({ limit: '500mb' }));
 app.use(express.urlencoded({ limit: '500mb', extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, '..', 'frontend', 'public')));
 
 // ─── DATABASE SETUP ──────────────────────────────────────────────────────────
-const db = new Database(path.join(__dirname, 'integrador.db'));
+const db = new Database(path.join(__dirname, 'data', 'integrador.db'));
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS pedidos (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    usuario_id INTEGER REFERENCES usuarios(id),
     numero_pedido TEXT,
     fecha TEXT,
     cliente TEXT,
@@ -90,7 +105,7 @@ db.exec(`
     email TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
     nombre TEXT NOT NULL,
-    rol TEXT NOT NULL DEFAULT 'asesor'
+    rol TEXT NOT NULL DEFAULT 'disenador'
   );
 `);
 
@@ -113,33 +128,10 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_bom_mat_codigo ON bom_materiales(codigo_producto);
 `);
 
-// ─── SEED CATALOGUES FROM JSON ────────────────────────────────────────────────
-// ─── SEED CATALOGUES FROM JSON ────────────────────────────────────────────────
-const catalogosJson = path.join(__dirname, 'catalogos.json');
-if (fs.existsSync(catalogosJson)) {
-    const data = JSON.parse(fs.readFileSync(catalogosJson, 'utf-8'));
-
-    // Always re-seed on startup to ensure DB is in sync with JSON
-    const reseed = db.transaction(() => {
-        db.prepare('DELETE FROM catalogos').run();
-        db.prepare("DELETE FROM sqlite_sequence WHERE name='catalogos'").run();
-
-        const insert = db.prepare('INSERT INTO catalogos (tipo, descripcion) VALUES (?, ?)');
-        for (const [tipo, values] of Object.entries(data)) {
-            for (const v of values) {
-                insert.run(tipo, v);
-            }
-        }
-    });
-
-    try {
-        reseed();
-        const count = db.prepare('SELECT COUNT(*) as c FROM catalogos').get().c;
-        console.log(`✅ Catálogos recargados en la BD (Total: ${count})`);
-    } catch (error) {
-        console.error('❌ Error recargando catálogos:', error.message);
-    }
-}
+// ─── SEED CATALOGUES (DINÁMICO) ────────────────────────────────────────────────
+// El sistema ahora utiliza la tabla 'catalogos' persistida en DB. 
+// La actualización se realiza mediante el script de ingesta (scripts/ingest_data.js)
+// desde el panel de mantenimiento, eliminando la dependencia de catalogos.json.
 
 // ─── AUTHENTICATION SETUP ───────────────────────────────────────────────────────
 // Create default admin user if no users exist
@@ -164,7 +156,7 @@ if (adminCount === 0) {
                 email TEXT NOT NULL UNIQUE,
                 password TEXT NOT NULL,
                 nombre TEXT NOT NULL,
-                rol TEXT NOT NULL DEFAULT 'asesor'
+                rol TEXT NOT NULL DEFAULT 'disenador'
               );
             `);
             db.exec(`INSERT INTO usuarios (id,email,password,nombre,rol)
@@ -172,6 +164,25 @@ if (adminCount === 0) {
             db.exec('DROP TABLE _tmp_usuarios;');
         })();
         console.log('✅ migration complete');
+    }
+}
+
+// migrate pedidos table to include usuario_id
+{
+    const cols = db.prepare("PRAGMA table_info(pedidos)").all().map(r => r.name);
+    if (!cols.includes('usuario_id')) {
+        console.log('⚠️ agregando columna usuario_id a la tabla pedidos');
+        try {
+            db.exec('ALTER TABLE pedidos ADD COLUMN usuario_id INTEGER REFERENCES usuarios(id);');
+            // Reasignar los pedidos huérfanos al administrador principal por defecto
+            const adminUser = db.prepare("SELECT id FROM usuarios WHERE rol = 'admin' ORDER BY id ASC LIMIT 1").get();
+            if (adminUser) {
+                db.prepare('UPDATE pedidos SET usuario_id = ? WHERE usuario_id IS NULL').run(adminUser.id);
+                console.log(`✅ Pedidos antiguos reasignados al usuario admin (ID: ${adminUser.id})`);
+            }
+        } catch (err) {
+            console.error('❌ Error agregando columna usuario_id:', err.message);
+        }
     }
 }
 
@@ -193,7 +204,13 @@ function requireAdmin(req, res, next) {
     next();
 }
 
-app.post('/api/login', (req, res) => {
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    max: 15, // máximo 15 intentos por IP
+    message: { error: 'Demasiados intentos de inicio de sesión. Espere 15 minutos.' }
+});
+
+app.post('/api/login', loginLimiter, (req, res) => {
     const { email, password } = req.body;
     try {
         const user = db.prepare('SELECT * FROM usuarios WHERE email = ?').get(email);
@@ -281,14 +298,18 @@ app.delete('/api/usuarios/:id', authenticateToken, requireAdmin, (req, res) => {
 const multer = require('multer');
 const { spawn } = require('child_process');
 
-// configure multer to write directly to project root using the provided filename
+// Configure multer to write to a temporary uploads folder first.
+// This prevents truncation of source files if the user uploads from the same project folder.
+const UPLOADS_DIR = path.join(__dirname, 'uploads');
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, __dirname);
+        cb(null, UPLOADS_DIR);
     },
     filename: function (req, file, cb) {
         const expected = req.body.expectedName;
-        cb(null, expected || file.originalname);
+        cb(null, (expected || file.originalname) + '.tmp_' + Date.now());
     }
 });
 const upload = multer({
@@ -300,7 +321,7 @@ const upload = multer({
 // frontend and backend remain in sync.  the config file also includes
 // Frontend and backend config keep in sync. Command configs included too.
 // Trigger nodemon restart buffer
-const DATA_MAINT_SCRIPTS = require(path.join(__dirname, 'client', 'src', 'config', 'dataMaintenance.json'));
+const DATA_MAINT_SCRIPTS = require(path.join(__dirname, '..', 'frontend', 'src', 'config', 'dataMaintenance.json'));
 
 // build a quick-access map for file existence checks
 const FILES_REQUIRED = {};
@@ -319,7 +340,7 @@ app.get('/api/admin/data/status', authenticateToken, requireAdmin, (req, res) =>
     });
 
     allFiles.forEach(f => {
-        files[f] = fs.existsSync(path.join(__dirname, f));
+        files[f] = fs.existsSync(path.join(__dirname, 'data', f));
     });
     res.json({ files });
 });
@@ -333,7 +354,7 @@ app.get('/api/admin/data/download/:filename', authenticateToken, requireAdmin, (
         return res.status(403).json({ error: 'Archivo no permitido' });
     }
 
-    const filePath = path.join(__dirname, filename);
+    const filePath = path.join(__dirname, 'data', filename);
     if (!fs.existsSync(filePath)) {
         return res.status(404).json({ error: 'Archivo no encontrado' });
     }
@@ -341,22 +362,35 @@ app.get('/api/admin/data/download/:filename', authenticateToken, requireAdmin, (
     res.download(filePath, filename);
 });
 
-// upload handler saves uploaded file to root and optionally renames it
+// upload handler saves uploaded file to a temporary location and then moves it to root
 app.post('/api/admin/data/upload', authenticateToken, requireAdmin, (req, res) => {
     upload.single('file')(req, res, function (err) {
         if (err instanceof multer.MulterError) {
-            // Un error de Multer ha ocurrido (por ej., superar el límite de tamaño: LIMIT_FILE_SIZE)
             console.error('Multer error:', err);
-            return res.status(400).json({ error: `Error subiendo archivo (Límite 50MB): ${err.message}` });
+            return res.status(400).json({ error: `Error subiendo archivo (Límite 500MB): ${err.message}` });
         } else if (err) {
-            // Un error desconocido ha ocurrido
             console.error('Unknown upload error:', err);
             return res.status(500).json({ error: `Error del servidor durante la carga: ${err.message}` });
         }
 
-        // Si llegamos hasta aquí, la carga fue exitosa
         if (!req.file) return res.status(400).json({ error: 'No se recibió ningún archivo' });
-        res.json({ message: `Archivo ${req.file.filename} subido correctamente` });
+
+        try {
+            // Move file from uploads/ to root with target name
+            const sourcePath = req.file.path;
+            const expectedName = req.body.expectedName || req.file.originalname;
+            const targetPath = path.join(__dirname, 'data', expectedName);
+
+            // Using copy + unlink instead of rename to handle potential cross-device issues
+            fs.copyFileSync(sourcePath, targetPath);
+            fs.unlinkSync(sourcePath);
+
+            console.log(`✅ Archivo ${expectedName} actualizado exitosamente desde subida temporal.`);
+            res.json({ message: `Archivo ${expectedName} subido correctamente` });
+        } catch (moveErr) {
+            console.error('Error moving uploaded file:', moveErr);
+            res.status(500).json({ error: `Error procesando el archivo subido: ${moveErr.message}` });
+        }
     });
 });
 
@@ -371,7 +405,7 @@ app.post('/api/admin/data/execute/:scriptId', authenticateToken, requireAdmin, (
     }
     app.locals.runningScript = scriptId;
 
-    const proc = spawn(script.command, script.args, { cwd: __dirname, env: process.env });
+    const proc = spawn(script.command, script.args, { cwd: path.join(__dirname, '..'), env: process.env });
     let output = '';
 
     proc.stdout.on('data', d => { output += d.toString(); });
@@ -457,7 +491,7 @@ app.get('/api/catalogos/:tipo', authenticateToken, (req, res) => {
 });
 
 // ─── API: ARTÍCULOS (BUSCADOR) ────────────────────────────────────────────────
-app.get('/api/articulos/buscar', (req, res) => {
+app.get('/api/articulos/buscar', authenticateToken, (req, res) => {
     const { q } = req.query;
     if (!q || q.length < 3) return res.json([]);
     try {
@@ -477,7 +511,7 @@ app.get('/api/articulos/buscar', (req, res) => {
     }
 });
 
-app.get('/api/articulos/lookup/:codigo', (req, res) => {
+app.get('/api/articulos/lookup/:codigo', authenticateToken, (req, res) => {
     const { codigo } = req.params;
     try {
         // Primero busca en PT (para códigos de producto)
@@ -513,20 +547,36 @@ app.get('/api/articulos/:codigo/materiales', (req, res) => {
 
 // List all pedidos
 app.get('/api/pedidos', authenticateToken, (req, res) => {
-    const pedidos = db.prepare(`
+    let query = `
         SELECT p.*,
                (SELECT COUNT(*) FROM puestos_trabajo WHERE pedido_id = p.id) as total_puestos,
                (SELECT COUNT(*) FROM puesto_items pi JOIN puestos_trabajo pt ON pi.puesto_id = pt.id WHERE pt.pedido_id = p.id) as total_items
         FROM pedidos p
-        ORDER BY p.updated_at DESC
-    `).all();
+    `;
+    const params = [];
+
+    // Data Segregation: Si es diseñador, solo ve sus pedidos
+    if (req.user.rol !== 'admin') {
+        query += ` WHERE p.usuario_id = ?`;
+        params.push(req.user.id);
+    }
+
+    query += ` ORDER BY p.updated_at DESC`;
+
+    const pedidos = db.prepare(query).all(...params);
     res.json(pedidos);
 });
 
 // Get one pedido with puestos and items
 app.get('/api/pedidos/:id', authenticateToken, (req, res) => {
-    const pedido = db.prepare('SELECT * FROM pedidos WHERE id = ?').get(req.params.id);
-    if (!pedido) return res.status(404).json({ error: 'Pedido no encontrado' });
+    let pedido;
+    if (req.user.rol === 'admin') {
+        pedido = db.prepare('SELECT * FROM pedidos WHERE id = ?').get(req.params.id);
+    } else {
+        pedido = db.prepare('SELECT * FROM pedidos WHERE id = ? AND usuario_id = ?').get(req.params.id, req.user.id);
+    }
+
+    if (!pedido) return res.status(404).json({ error: 'Pedido no encontrado o no tienes permiso para verlo' });
 
     const puestos = db.prepare(
         'SELECT * FROM puestos_trabajo WHERE pedido_id = ? ORDER BY orden ASC'
@@ -611,8 +661,8 @@ app.post('/api/pedidos', authenticateToken, (req, res) => {
 
     const createPedido = db.transaction(() => {
         const result = db.prepare(
-            `INSERT INTO pedidos (numero_pedido, fecha, cliente, proyecto, disenador, asesor) VALUES (?, ?, ?, ?, ?, ?)`
-        ).run(numero_pedido, fecha, cliente, proyecto, disenador, asesor);
+            `INSERT INTO pedidos (usuario_id, numero_pedido, fecha, cliente, proyecto, disenador, asesor) VALUES (?, ?, ?, ?, ?, ?, ?)`
+        ).run(req.user.id, numero_pedido, fecha, cliente, proyecto, disenador, asesor);
         const pedidoId = result.lastInsertRowid;
 
         savePuestos(pedidoId, puestos);
@@ -626,8 +676,15 @@ app.post('/api/pedidos', authenticateToken, (req, res) => {
 // Update pedido
 app.put('/api/pedidos/:id', authenticateToken, (req, res) => {
     const { numero_pedido, fecha, cliente, proyecto, disenador, asesor, puestos = [] } = req.body;
-    const pedido = db.prepare('SELECT id FROM pedidos WHERE id = ?').get(req.params.id);
-    if (!pedido) return res.status(404).json({ error: 'Pedido no encontrado' });
+
+    let pedido;
+    if (req.user.rol === 'admin') {
+        pedido = db.prepare('SELECT id FROM pedidos WHERE id = ?').get(req.params.id);
+    } else {
+        pedido = db.prepare('SELECT id FROM pedidos WHERE id = ? AND usuario_id = ?').get(req.params.id, req.user.id);
+    }
+
+    if (!pedido) return res.status(404).json({ error: 'Pedido no encontrado o no tienes permisos para editarlo' });
 
     // Validaciones básicas
     const errors = [];
@@ -706,7 +763,18 @@ app.put('/api/pedidos/:id', authenticateToken, (req, res) => {
 
 // Delete
 app.delete('/api/pedidos/:id', authenticateToken, (req, res) => {
-    db.prepare('DELETE FROM pedidos WHERE id = ?').run(req.params.id);
+    const id = req.params.id;
+    let info;
+    if (req.user.rol === 'admin') {
+        info = db.prepare('DELETE FROM pedidos WHERE id = ?').run(id);
+    } else {
+        info = db.prepare('DELETE FROM pedidos WHERE id = ? AND usuario_id = ?').run(id, req.user.id);
+    }
+
+    if (info.changes === 0) {
+        return res.status(404).json({ error: 'Pedido no encontrado o no autorizado para eliminarlo' });
+    }
+
     res.json({ message: 'Pedido eliminado' });
 });
 
@@ -776,10 +844,10 @@ app.get('/api/pedidos/:id/export', authenticateToken, async (req, res) => {
     ws.headerFooter = { oddFooter: '&L&8&K777777Generado: &D &T&R&8&K777777Página &P de &N' };
 
     const logoCandidates = [
-        path.join(__dirname, 'client', 'public', 'logo-carvajal.png'),
-        path.join(__dirname, 'client', 'public', 'logo.png'),
-        path.join(__dirname, 'public', 'logo.png'),
-        path.join(__dirname, 'public', 'logo.jpg'),
+        path.join(__dirname, '..', 'frontend', 'public', 'logo-carvajal.png'),
+        path.join(__dirname, '..', 'frontend', 'public', 'logo.png'),
+        path.join(__dirname, '..', 'frontend', 'public', 'logo.jpg'),
+        path.join(__dirname, '..', 'frontend', 'public', 'logo.jpeg'),
         path.join(__dirname, 'public', 'logo.jpeg'),
         path.join(__dirname, 'logo.png'),
         path.join(__dirname, 'logo.jpg'),
@@ -1100,9 +1168,9 @@ app.get('/api/pedidos/:id/export', authenticateToken, async (req, res) => {
 });
 
 // ─── SERVE SPA ────────────────────────────────────────────────────────────────
-app.use(express.static(path.join(__dirname, 'client', 'dist')));
+app.use(express.static(path.join(__dirname, '..', 'frontend', 'dist')));
 app.use((req, res) => {
-    res.sendFile(path.join(__dirname, 'client', 'dist', 'index.html'));
+    res.sendFile(path.join(__dirname, '..', 'frontend', 'dist', 'index.html'));
 });
 
 const server = app.listen(PORT, '0.0.0.0', () => {

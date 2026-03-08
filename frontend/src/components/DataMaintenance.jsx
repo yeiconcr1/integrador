@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { apiFetch, uploadDataFile, executeDataScript, downloadResultFile } from '../api'
 
 // cargar lista de scripts desde la configuración compartida
@@ -10,7 +10,8 @@ export default function DataMaintenance({ showToast }) {
     const [results, setResults] = useState({})
     const [executing, setExecuting] = useState(null)
     const [uploading, setUploading] = useState(null)
-    const [confirmModal, setConfirmModal] = useState(null) // solo para mostrar qué rutina se ejecuta en los logs locales (opcional)
+    const [confirmModal, setConfirmModal] = useState(null) // { id, label }
+    const modalRef = useRef(null)
 
     useEffect(() => {
         checkStatus()
@@ -68,19 +69,15 @@ export default function DataMaintenance({ showToast }) {
     }
 
     const triggerScript = (scriptId, label) => {
-        // setTimeout para que el confirm se muestre tras el ciclo de eventos (evita que React lo oculte)
-        setTimeout(() => {
-            const ok = window.confirm(
-                `Vas a ejecutar la rutina:\n\n` +
-                `  • ${label}\n\n` +
-                `Esta acción procesará los archivos maestros que estén cargados en el servidor y puede tardar varios minutos.\n` +
-                `Úsala solo cuando quieras actualizar los datos técnicos.\n\n` +
-                `¿Deseas continuar?`
-            )
-            if (!ok) return
-            setConfirmModal({ id: scriptId, label })
-            runScript(scriptId, label)
-        }, 0)
+        setConfirmModal({ id: scriptId, label })
+        modalRef.current?.showModal()
+    }
+
+    const handleConfirmRun = () => {
+        if (!confirmModal) return
+        const { id, label } = confirmModal
+        modalRef.current?.close()
+        runScript(id, label)
     }
 
     const runScript = async (scriptId, label) => {
@@ -224,6 +221,44 @@ export default function DataMaintenance({ showToast }) {
                 ))}
             </div>
 
+            {/* Modal de Confirmación de Rutina */}
+            <dialog ref={modalRef} className="modal modal-bottom sm:modal-middle p-0 backdrop:bg-black/40">
+                <div className="modal-box p-0 border border-[#b0bec5] shadow-2xl rounded-sm overflow-hidden min-w-[450px]">
+                    <div style={{ background: 'linear-gradient(180deg, #4a6fa5 0%, #3a5a8a 100%)', padding: '6px 12px', color: '#fff', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" strokeWidth="2.5" /></svg>
+                        Confirmar ejecución de rutina
+                    </div>
+                    <div style={{ background: '#f7f8fa', padding: '16px' }}>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: '#334155', margin: 0 }}>¿Ejecutar esta rutina de mantenimiento?</p>
+                        {confirmModal && (
+                            <div className="mt-3 space-y-3">
+                                <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 2, padding: '10px 12px' }}>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <span style={{ fontSize: 11, fontWeight: 700, color: '#1a3a5c', background: '#e0e7ff', padding: '2px 6px', borderRadius: 2 }}>RUTINA</span>
+                                        <span style={{ fontSize: 12, fontWeight: 600, color: '#1e293b' }}>{confirmModal.label}</span>
+                                    </div>
+                                    <p style={{ fontSize: 11, color: '#64748b', lineHeight: 1.4 }}>
+                                        Esta acción procesará los archivos maestros cargados y actualizará la base de datos técnica.
+                                        Puede tardar varios minutos dependiendo del volumen de datos.
+                                    </p>
+                                </div>
+                                <div className="flex items-start gap-2 text-[11px] text-amber-700 bg-amber-50 p-2 border border-amber-200 rounded-sm">
+                                    <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" strokeWidth="2" /></svg>
+                                    Asegúrate de que los archivos origen estén actualizados antes de proceder.
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    <div style={{ background: 'linear-gradient(180deg, #dfe6ed, #c8d1db)', borderTop: '1px solid #a0aec0', padding: '10px 12px', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                        <button onClick={() => { modalRef.current?.close(); setConfirmModal(null) }} className="ebs-btn bg-white">
+                            Cancelar
+                        </button>
+                        <button onClick={handleConfirmRun} className="ebs-btn ebs-btn-primary">
+                            Continuar y Ejecutar
+                        </button>
+                    </div>
+                </div>
+            </dialog>
         </div>
     )
 }

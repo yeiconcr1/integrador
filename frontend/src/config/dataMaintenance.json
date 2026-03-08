@@ -9,7 +9,7 @@
     ],
     "command": "node",
     "args": [
-      "scripts/ingest_data.js"
+      "backend/scripts/ingest_data.js"
     ]
   },
   {
@@ -21,7 +21,7 @@
     ],
     "command": "node",
     "args": [
-      "scripts/process_bom_all.js"
+      "backend/scripts/process_bom_all.js"
     ],
     "outputFile": "BOMS_indentados.csv"
   }

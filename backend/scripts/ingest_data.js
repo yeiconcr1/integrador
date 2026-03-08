@@ -138,27 +138,8 @@ async function processMP() {
                 const locator = parts.length > 45 ? parts[45].toUpperCase().trim() : '';
 
                 // Filtros de exclusión globales (Fase 2: Purga masiva de accesorios y consumibles)
-                const EXCLUDED_KEYWORDS = [
-                    'PERFIL', 'PLATINA', 'ANGULO', 'CANTONERA', 'SUPERFICIE', 'APROVECHAMIENTO',
-                    'DEPURACION', 'DEP ', 'REGRUESE', 'AJUSTADOR', 'CATALIZADOR', 'THINER',
-                    'REMOVEDOR', 'SILICONA', 'ETIQUETA', 'ALAMBRE', 'PRIMER', 'KIT',
-                    'ESTRUCTURA', 'HERRAJE', 'PATA', 'PARALES', 'MDF', 'UNICOR', 'FIBRA',
-                    'PISO', 'REATA', 'TAFETA', 'DACRON', 'PELICULA', 'BISAGRA', 'CERRADURA',
-                    'CORREDERA', 'CAJA', 'BOLSA', 'EMPAQUE', 'TAPA', 'TORNILLO', 'PERFORACIONES',
-                    'BOQUETES', 'PISAVIDRIO', 'ROLLO', 'VELCRO', 'KAMBRAL', 'PUERTA', 'PANTALLA',
-                    'NAVE', 'MAQUILA', 'VIDRIO TEMPLADO', 'VIDRIO LAMINADO', 'VIDRIO CRUDO',
-                    'ESPEJO-FONDO', 'ESPEJO 4MM', 'CENTRAL', 'PUNTERA', 'CUERPO', 'KIT VETRO',
-                    'SIST. NIVELA.', 'REFERENCIA DESCONTINUADA', 'DESCONTINUADA', 'NO USAR', 'LACA', 'COUNTER'
-                ];
-
-                if (rawDesc.startsWith('HAI-') || rawDesc.startsWith('(PROVI)')) continue;
-                if (EXCLUDED_KEYWORDS.some(k => rawDesc.includes(k))) continue;
-                if (rawDesc.includes('GENERICO') || rawDesc.includes('CODIGO INACTIVO')) continue;
-                if (rawDesc.includes('(USAR ') || rawDesc.includes('(ANTES ')) continue;
-
+                // Clasificación dinámica
                 let type = null;
-
-                // Prioridad Pintura: Localizador PI o palabra clave
                 if (locator.startsWith('PI') || catPath.includes('PINTURA') || rawDesc.includes('PINTURA')) {
                     type = 'pintura';
                 } else if (catPath.includes('TELAS') || rawDesc.startsWith('TELA ')) {
@@ -167,16 +148,42 @@ async function processMP() {
                     type = 'supercor';
                 } else if (catPath.includes('FORMICA') || rawDesc.includes('FORMICA')) {
                     type = 'formica';
-                } else if (catPath.includes('MADECANTO')) {
+                } else if (catPath.includes('MADECANTO') || rawDesc.includes('MADECANTO')) {
                     type = 'madecanto';
-                } else if (catPath.includes('CANTO')) {
+                } else if (catPath.includes('CANTO') || rawDesc.includes('CANTO ')) {
                     type = 'canto';
-                } else if (catPath.includes('VIDRIO') || rawDesc.includes('VIDRIO')) {
+                } else if ((catPath.includes('VIDRIO') || rawDesc.includes('VIDRIO')) && !rawDesc.includes('PISAVIDRIO') && type !== 'canto') {
                     type = 'vidrio';
                 }
 
+                // FILTROS DE EXCLUSIÓN (Estrictos)
+                const EXCLUDED_KEYWORDS = [
+                    'PERFIL', 'PLATINA', 'ANGULO', 'CANTONERA', 'SUPERFICIE', 'APROVECHAMIENTO',
+                    'DEPURACION', 'DEP ', 'REGRUESE', 'AJUSTADOR', 'CATALIZADOR', 'THINER',
+                    'REMOVEDOR', 'SILICONA', 'ETIQUETA', 'ALAMBRE', 'PRIMER', 'KIT',
+                    'ESTRUCTURA', 'HERRAJE', 'PATA', 'PARALES', 'MDF', 'UNICOR', 'FIBRA',
+                    'PISO', 'REATA', 'TAFETA', 'DACRON', 'PELICULA', 'BISAGRA', 'CERRADURA',
+                    'CORREDERA', 'CAJA', 'BOLSA', 'EMPAQUE', 'TAPA', 'TORNILLO', 'PERFORACIONES',
+                    'BOQUETES', 'PISAVIDRIO', 'ROLLO', 'VELCRO', 'KAMBRAL', 'PUERTA', 'PANTALLA',
+                    'NAVE', 'MAQUILA', 'ESPEJO-FONDO', 'ESPEJO 4MM', 'CENTRAL', 'PUNTERA', 'CUERPO', 'KIT VETRO',
+                    'SIST. NIVELA.', 'REFERENCIA DESCONTINUADA', 'DESCONTINUADA', 'NO USAR', 'LACA', 'COUNTER', 'PARTE-', 'BOTON', 'ESQUINERO', 'BUJE', 'DICHROIC',
+                    'MANIJA', 'PICO LORO', 'RIEL', 'GUIA LUNA', 'TUBULAR', 'KUO-GO', 'KUSU', 'SURTIGAS', 'GLOBANT', 'ITAU', 'SURA', 'ECOPETROL', 'PELICULA', 'BANCOOMEVA', 'VICTOSA'
+                ];
+
+                if (rawDesc.startsWith('HAI-') || rawDesc.startsWith('(PROVI)')) continue;
+                if (rawDesc.includes('CODIGO INACTIVO')) continue;
+                if (rawDesc.includes('(USAR ') || rawDesc.includes('(ANTES ')) continue;
+
+                // Exclusión Global de GENERICO (Requerida por el usuario)
+                if (rawDesc.includes('GENERICO')) continue;
+
+                // Exclusión para VIDRIO basado en Localizador (Solo VID o VACIO)
+                if (type === 'vidrio' && locator.startsWith('EN ')) continue;
+
+                // Aplicar palabras excluidas
+                if (EXCLUDED_KEYWORDS.some(k => rawDesc.includes(k))) continue;
+
                 // Skip if description contains GENERICO or CODIGO INACTIVO
-                if (desc.includes('GENERICO') || desc.includes('CODIGO INACTIVO')) continue;
 
                 if (code.length < 4 || !/^\d+$/.test(code)) continue;
 

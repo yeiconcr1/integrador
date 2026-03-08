@@ -7,7 +7,11 @@ import { fetchCatalogo } from '../api'
 // - searchFn: async (q) => result[] -> uses custom search function (returns objects or strings)
 // - onSelect: (opt) => void -> custom select handler (if returns object)
 // - labelKey: string -> key to display in list if option is object
-export default function AutocompleteInput({ value, onChange, tipo, searchFn, onSelect, placeholder, labelKey, disabled, multiline = false, growCell = false, collapseSpaces = false }) {
+export default function AutocompleteInput({
+    value, onChange, tipo, searchFn, onSelect, placeholder, labelKey, disabled,
+    multiline = false, growCell = false, collapseSpaces = false,
+    'data-row': dataRow, 'data-col': dataCol
+}) {
     const [open, setOpen] = useState(false)
     const [options, setOptions] = useState([])
     const [sel, setSel] = useState(-1)
@@ -96,7 +100,10 @@ export default function AutocompleteInput({ value, onChange, tipo, searchFn, onS
     }
 
     const handleKeyDown = (e) => {
-        if (!open || !options.length) return
+        if (!open || !options.length) {
+            // Si el menú está cerrado, no prevenimos defecto para permitir burbujeo a ItemsTable
+            return
+        }
         if (e.key === 'ArrowDown') { e.preventDefault(); setSel(s => Math.min(s + 1, options.length - 1)) }
         if (e.key === 'ArrowUp') { e.preventDefault(); setSel(s => Math.max(s - 1, -1)) }
         if (e.key === 'Enter' && sel >= 0) { e.preventDefault(); select(options[sel]) }
@@ -164,6 +171,8 @@ export default function AutocompleteInput({ value, onChange, tipo, searchFn, onS
                     placeholder={placeholder}
                     disabled={disabled}
                     tabIndex={disabled ? -1 : undefined}
+                    data-row={dataRow}
+                    data-col={dataCol}
                     rows={1}
                     className={`cell-input w-full min-h-[34px] ${growCell ? '' : 'max-h-[56px]'} overflow-hidden bg-transparent border-0 px-2 py-1 text-[11px] leading-4 text-gray-700 placeholder:text-gray-400/60 focus:outline-none resize-none
                         ${disabled ? 'cursor-not-allowed pointer-events-none select-none' : ''}`}
@@ -180,6 +189,8 @@ export default function AutocompleteInput({ value, onChange, tipo, searchFn, onS
                     autoComplete="off"
                     disabled={disabled}
                     tabIndex={disabled ? -1 : undefined}
+                    data-row={dataRow}
+                    data-col={dataCol}
                     className={`cell-input w-full h-full bg-transparent border-0 px-2 text-[11px] text-gray-700 placeholder:text-gray-400/60 focus:outline-none
                         ${disabled ? 'cursor-not-allowed pointer-events-none select-none' : ''}`}
                 />

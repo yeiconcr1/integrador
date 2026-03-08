@@ -282,7 +282,7 @@ export function emptyItem() {
         _id: crypto.randomUUID(),
         codigo: '', descripcion: '',
         nota_h: '', nota_l: '', nota_prof: '', nota_adicional: '',
-        cantidad_unitaria: '', cantidad_tipologia: '', cantidad_total: '',
+        cantidad_unitaria: '', cantidad_tipologia: 1, cantidad_total: '',
         pintura: '', acabados_adicional: '', formica: '',
         supercor: '', canto: '', madecanto: '',
         vidrio: '', tela: '', render: '',

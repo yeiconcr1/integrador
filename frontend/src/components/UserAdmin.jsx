@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 const ADMIN_EMAIL = 'admin@omega.com';
 import { fetchUsuarios, createUsuario, updateUsuario, deleteUsuario } from '../api'
@@ -11,6 +11,8 @@ export default function UserAdmin() {
     const [error, setError] = useState(null)
     const [modalOpen, setModalOpen] = useState(false)
     const [editingUser, setEditingUser] = useState(null)
+    const [deleteConfirm, setDeleteConfirm] = useState(null) // { id, email }
+    const deleteRef = useRef(null)
 
     // Form state
     const [email, setEmail] = useState('')
@@ -87,13 +89,20 @@ export default function UserAdmin() {
         }
     }
 
-    const handleDelete = async (id, userEmail) => {
-        if (!window.confirm(`¿Estás seguro de eliminar al usuario ${userEmail}?`)) return
+    const handleDelete = (id, userEmail) => {
+        setDeleteConfirm({ id, email: userEmail })
+        deleteRef.current?.showModal()
+    }
+
+    const confirmDelete = async () => {
+        if (!deleteConfirm) return
         try {
-            await deleteUsuario(id)
+            await deleteUsuario(deleteConfirm.id)
+            setDeleteConfirm(null)
+            deleteRef.current?.close()
             loadUsuarios()
         } catch (err) {
-            alert(err.message)
+            setError(err.message)
         }
     }
 
@@ -105,8 +114,8 @@ export default function UserAdmin() {
                 <button
                     onClick={() => setActiveTab('users')}
                     className={`px-4 py-1.5 text-[11px] font-bold rounded-t-[2px] border-x border-t transition-all ${activeTab === 'users'
-                            ? 'bg-[#1a3a5c] text-white border-[#1a3a5c] shadow-[0_-2px_4px_rgba(0,0,0,0.1)]'
-                            : 'bg-[#e1e1e1] text-[#666] border-[#a0a0a0] hover:bg-[#d5d5d5]'
+                        ? 'bg-[#1a3a5c] text-white border-[#1a3a5c] shadow-[0_-2px_4px_rgba(0,0,0,0.1)]'
+                        : 'bg-[#e1e1e1] text-[#666] border-[#a0a0a0] hover:bg-[#d5d5d5]'
                         }`}
                 >
                     GESTIÓN DE USUARIOS
@@ -114,8 +123,8 @@ export default function UserAdmin() {
                 <button
                     onClick={() => setActiveTab('data')}
                     className={`px-4 py-1.5 text-[11px] font-bold rounded-t-[2px] border-x border-t transition-all ${activeTab === 'data'
-                            ? 'bg-[#1a3a5c] text-white border-[#1a3a5c] shadow-[0_-2px_4px_rgba(0,0,0,0.1)]'
-                            : 'bg-[#e1e1e1] text-[#666] border-[#a0a0a0] hover:bg-[#d5d5d5]'
+                        ? 'bg-[#1a3a5c] text-white border-[#1a3a5c] shadow-[0_-2px_4px_rgba(0,0,0,0.1)]'
+                        : 'bg-[#e1e1e1] text-[#666] border-[#a0a0a0] hover:bg-[#d5d5d5]'
                         }`}
                 >
                     MANTENIMIENTO DE DATOS
@@ -250,14 +259,42 @@ export default function UserAdmin() {
                                 </select>
                             </div>
 
-                            <div className="flex justify-end gap-2 mt-2 pt-2 border-t border-gray-300">
+                            <div style={{ background: 'linear-gradient(180deg, #dfe6ed, #c8d1db)', borderTop: '1px solid #a0aec0', padding: '10px 12px', display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
                                 <button type="button" onClick={closeModal} className="ebs-btn bg-white">Cancelar</button>
-                                <button type="submit" className="ebs-btn ebs-btn-primary">Guardar</button>
+                                <button type="submit" className="ebs-btn ebs-btn-primary">Guardar Usuario</button>
                             </div>
                         </form>
                     </div>
                 </div>
             )}
+
+            {/* Modal de Confirmación de Eliminación */}
+            <dialog ref={deleteRef} style={{ border: 'none', background: 'transparent' }} className="p-0 backdrop:bg-black/40">
+                <div className="fixed inset-0 flex items-center justify-center z-[100] p-4 pointer-events-none">
+                    <div className="modal-box p-0 border border-[#b0bec5] shadow-2xl rounded-sm overflow-hidden min-w-[380px] pointer-events-auto">
+                        <div style={{ background: 'linear-gradient(180deg, #4a6fa5 0%, #3a5a8a 100%)', padding: '6px 12px', color: '#fff', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" strokeWidth="2.5" /></svg>
+                            Confirmar eliminación
+                        </div>
+                        <div style={{ background: '#f7f8fa', padding: '16px' }}>
+                            <p style={{ fontSize: 13, fontWeight: 600, color: '#334155', margin: 0 }}>¿Eliminar este usuario?</p>
+                            {deleteConfirm && (
+                                <p style={{ fontSize: 12, color: '#64748b', margin: '8px 0 0' }}>
+                                    Se eliminará permanentemente la cuenta de <strong>{deleteConfirm.email}</strong>. Esta acción no se puede deshacer.
+                                </p>
+                            )}
+                        </div>
+                        <div style={{ background: 'linear-gradient(180deg, #dfe6ed, #c8d1db)', borderTop: '1px solid #a0aec0', padding: '10px 12px', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                            <button onClick={() => { deleteRef.current?.close(); setDeleteConfirm(null) }} className="ebs-btn">
+                                Cancelar
+                            </button>
+                            <button onClick={confirmDelete} className="ebs-btn ebs-btn-danger">
+                                Eliminar Usuario
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </dialog>
         </div>
     )
 }

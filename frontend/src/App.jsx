@@ -23,6 +23,44 @@ export default function App() {
   const [user, setUser] = useState(getUser())
   const [pedidos, setPedidos] = useState([])
   const [currentId, setCurrentId] = useState(null)
+
+  // Helper to get a stable snapshot for "dirty" comparison
+  const getPedidoSnapshot = useCallback((f, pList) => {
+    return JSON.stringify({
+      form: {
+        numero_pedido: f.numero_pedido || '',
+        fecha: f.fecha || today,
+        cliente: f.cliente || '',
+        proyecto: f.proyecto || '',
+        disenador: f.disenador || '',
+        asesor: f.asesor || ''
+      },
+      puestos: pList.map(p => ({
+        nombre: p.nombre,
+        items: p.items.map(it => ({
+          codigo: it.codigo || '',
+          descripcion: it.descripcion || '',
+          nota_h: it.nota_h || '',
+          nota_l: it.nota_l || '',
+          nota_prof: it.nota_prof || '',
+          nota_adicional: it.nota_adicional || '',
+          cantidad_unitaria: it.cantidad_unitaria || '',
+          cantidad_tipologia: it.cantidad_tipologia || '',
+          cantidad_total: it.cantidad_total || '',
+          pintura: it.pintura || '',
+          acabados_adicional: it.acabados_adicional || '',
+          formica: it.formica || '',
+          supercor: it.supercor || '',
+          canto: it.canto || '',
+          madecanto: it.madecanto || '',
+          vidrio: it.vidrio || '',
+          tela: it.tela || '',
+          render: it.render || ''
+        }))
+      }))
+    })
+  }, [])
+
   const [form, setForm] = useState(newForm(user?.nombre || ''))
   const [puestos, setPuestos] = useState([{ ...emptyPuesto(1), nombre: 'PUESTO 1' }])
   const [search, setSearch] = useState('')
@@ -45,9 +83,8 @@ export default function App() {
   // Check if form has unsaved changes
   const isDirty = useMemo(() => {
     if (!savedSnapshot) return false
-    const current = JSON.stringify({ form, puestos: puestos.map(p => ({ nombre: p.nombre, items: p.items.map(it => ({ codigo: it.codigo, descripcion: it.descripcion, nota_h: it.nota_h, nota_l: it.nota_l, nota_prof: it.nota_prof, nota_adicional: it.nota_adicional, cantidad_unitaria: it.cantidad_unitaria, cantidad_tipologia: it.cantidad_tipologia, cantidad_total: it.cantidad_total, pintura: it.pintura, acabados_adicional: it.acabados_adicional, formica: it.formica, supercor: it.supercor, canto: it.canto, madecanto: it.madecanto, vidrio: it.vidrio, tela: it.tela, render: it.render })) })) })
-    return current !== savedSnapshot
-  }, [form, puestos, savedSnapshot])
+    return getPedidoSnapshot(form, puestos) !== savedSnapshot
+  }, [form, puestos, savedSnapshot, getPedidoSnapshot])
 
   // ─── DATA LOADERS ────────────────────────────────────────────────────────
   const loadList = useCallback(async () => {
@@ -82,8 +119,7 @@ export default function App() {
       setHeaderErrors({})
       setInvalidCells(new Set())
       // Save snapshot after load
-      const cleanPuestos = (data.puestos || []).map(p => ({ nombre: p.nombre, items: p.items.map(it => ({ codigo: it.codigo, descripcion: it.descripcion, nota_h: it.nota_h, nota_l: it.nota_l, nota_prof: it.nota_prof, nota_adicional: it.nota_adicional, cantidad_unitaria: it.cantidad_unitaria, cantidad_tipologia: it.cantidad_tipologia, cantidad_total: it.cantidad_total, pintura: it.pintura, acabados_adicional: it.acabados_adicional, formica: it.formica, supercor: it.supercor, canto: it.canto, madecanto: it.madecanto, vidrio: it.vidrio, tela: it.tela, render: it.render })) }))
-      setSavedSnapshot(JSON.stringify({ form: { numero_pedido: data.numero_pedido || '', fecha: data.fecha || today, cliente: data.cliente || '', proyecto: data.proyecto || '', disenador: data.disenador || '', asesor: data.asesor || '' }, puestos: cleanPuestos }))
+      setSavedSnapshot(getPedidoSnapshot(data, data.puestos || []))
     } catch (err) {
       show('Error cargando pedido', 'error')
     }
@@ -242,14 +278,7 @@ export default function App() {
         show('Pedido guardado con éxito ✓', 'success')
       }
 
-      const snapshotPuestos = processedPuestos.map(p => ({
-        nombre: p.nombre,
-        items: p.items.map(it => {
-          const { _id, id, puesto_id, ...clean } = it
-          return clean
-        })
-      }))
-      setSavedSnapshot(JSON.stringify({ form, puestos: snapshotPuestos }))
+      setSavedSnapshot(getPedidoSnapshot(form, processedPuestos))
       setPuestos(processedPuestos)
       await loadList()
     } catch (err) {
@@ -640,76 +669,103 @@ export default function App() {
           </div>
 
           {/* ── Warning Modal (soft validations) ── */}
-          <dialog ref={warningRef} className="modal modal-bottom sm:modal-middle">
-            <div className="modal-box">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-xl bg-warning/20 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" strokeWidth="2" /></svg>
+          <dialog ref={warningRef} style={{ border: 'none', background: 'transparent' }} className="p-0 backdrop:bg-black/40">
+            <div className="fixed inset-0 flex items-center justify-center z-[100] p-4 pointer-events-none">
+              <div className="modal-box p-0 border border-[#b0bec5] shadow-2xl rounded-sm overflow-hidden min-w-[450px] pointer-events-auto">
+                {/* Header */}
+                <div style={{ background: 'linear-gradient(180deg, #4a6fa5 0%, #3a5a8a 100%)', padding: '6px 12px', color: '#fff', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" strokeWidth="2.5" /></svg>
+                  Advertencias al guardar
                 </div>
-                <div>
-                  <h3 className="font-bold text-lg">Advertencias al guardar</h3>
-                  {warningModal && <p className="text-sm text-base-content/60">Se encontraron {warningModal.warnings.length} advertencia{warningModal.warnings.length !== 1 ? 's' : ''}</p>}
+                {/* Body */}
+                <div style={{ background: '#f7f8fa', padding: '16px' }}>
+                  {warningModal && (
+                    <>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 12 }}>
+                        Se encontraron {warningModal.warnings.length} advertencia{warningModal.warnings.length !== 1 ? 's' : ''}
+                      </p>
+                      <div className="max-h-60 overflow-y-auto pr-1 space-y-1">
+                        {warningModal.warnings.map((w, i) => (
+                          <div key={i} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 2, padding: '8px 10px', display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12 }}>
+                            <span className="flex-shrink-0" style={{ fontSize: 15 }}>{w.icon}</span>
+                            <span style={{ color: '#475569' }}>{w.message}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
-              </div>
-              {warningModal && (
-                <div className="max-h-60 overflow-y-auto space-y-1.5 my-4">
-                  {warningModal.warnings.map((w, i) => (
-                    <div key={i} className={`flex items-start gap-2.5 px-3 py-2.5 rounded-lg text-sm
-                  ${w.type === 'missing-material' ? 'bg-warning/10 text-warning-content' : 'bg-base-200 text-base-content/80'}`}>
-                      <span className="flex-shrink-0 text-base">{w.icon}</span>
-                      <span>{w.message}</span>
-                    </div>
-                  ))}
+                {/* Footer */}
+                <div style={{ background: 'linear-gradient(180deg, #dfe6ed, #c8d1db)', borderTop: '1px solid #a0aec0', padding: '10px 12px', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                  <button onClick={() => { warningRef.current?.close(); setWarningModal(null) }} className="ebs-btn">
+                    Corregir
+                  </button>
+                  <button onClick={() => { warningRef.current?.close(); setWarningModal(null); save(true) }} className="ebs-btn ebs-btn-primary">
+                    Guardar de todos modos
+                  </button>
                 </div>
-              )}
-              <div className="modal-action">
-                <button onClick={() => { warningRef.current?.close(); setWarningModal(null) }} className="btn btn-ghost">Corregir</button>
-                <button onClick={() => { warningRef.current?.close(); setWarningModal(null); save(true) }} className="btn btn-warning">Guardar de todos modos</button>
               </div>
             </div>
-            <form method="dialog" className="modal-backdrop"><button onClick={() => setWarningModal(null)}>close</button></form>
           </dialog>
 
           {/* ── Delete Puesto Modal ── */}
-          <dialog ref={deletePuestoRef} className="modal modal-bottom sm:modal-middle">
-            <div className="modal-box">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-xl bg-error/20 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" strokeWidth="2" /></svg>
+          <dialog ref={deletePuestoRef} style={{ border: 'none', background: 'transparent' }} className="p-0 backdrop:bg-black/40">
+            <div className="fixed inset-0 flex items-center justify-center z-[100] p-4 pointer-events-none">
+              <div className="modal-box p-0 border border-[#b0bec5] shadow-2xl rounded-sm overflow-hidden min-w-[400px] pointer-events-auto">
+                {/* Header */}
+                <div style={{ background: 'linear-gradient(180deg, #4a6fa5 0%, #3a5a8a 100%)', padding: '6px 12px', color: '#fff', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" strokeWidth="2.5" /></svg>
+                  Confirmar eliminación
                 </div>
-                <h3 className="font-bold text-lg">¿Eliminar puesto de trabajo?</h3>
-              </div>
-              {deletePuestoModal && (
-                <p className="text-sm text-base-content/60 mb-1">
-                  Se eliminará <span className="font-semibold text-base-content">{deletePuestoModal.nombre}</span> con {deletePuestoModal.itemCount} artículo{deletePuestoModal.itemCount !== 1 ? 's' : ''}. Esta acción no se puede deshacer.
-                </p>
-              )}
-              <div className="modal-action">
-                <button onClick={() => { deletePuestoRef.current?.close(); setDeletePuestoModal(null) }} className="btn btn-ghost">Cancelar</button>
-                <button onClick={() => { confirmRemovePuesto(); deletePuestoRef.current?.close() }} className="btn btn-error">Eliminar</button>
+                {/* Body */}
+                <div style={{ background: '#f7f8fa', padding: '16px' }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#334155', margin: 0 }}>¿Desea eliminar este puesto de trabajo?</p>
+                  {deletePuestoModal && (
+                    <p style={{ fontSize: 12, color: '#64748b', margin: '8px 0 0' }}>
+                      Se eliminará permanentemente <strong>{deletePuestoModal.nombre}</strong> con {deletePuestoModal.itemCount} artículo{deletePuestoModal.itemCount !== 1 ? 's' : ''}. Esta acción no se puede deshacer.
+                    </p>
+                  )}
+                </div>
+                {/* Footer */}
+                <div style={{ background: 'linear-gradient(180deg, #dfe6ed, #c8d1db)', borderTop: '1px solid #a0aec0', padding: '10px 12px', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                  <button onClick={() => { deletePuestoRef.current?.close(); setDeletePuestoModal(null) }} className="ebs-btn">
+                    Cancelar
+                  </button>
+                  <button onClick={() => { confirmRemovePuesto(); deletePuestoRef.current?.close() }} className="ebs-btn ebs-btn-danger">
+                    Eliminar Puesto
+                  </button>
+                </div>
               </div>
             </div>
-            <form method="dialog" className="modal-backdrop"><button onClick={() => setDeletePuestoModal(null)}>close</button></form>
           </dialog>
 
           {/* ── Delete Pedido Modal ── */}
-          <dialog ref={deletePedidoRef} className="modal modal-bottom sm:modal-middle">
-            <div className="modal-box">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-xl bg-error/20 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" strokeWidth="2" /></svg>
+          <dialog ref={deletePedidoRef} style={{ border: 'none', background: 'transparent' }} className="p-0 backdrop:bg-black/40">
+            <div className="fixed inset-0 flex items-center justify-center z-[100] p-4 pointer-events-none">
+              <div className="modal-box p-0 border border-[#b0bec5] shadow-2xl rounded-sm overflow-hidden min-w-[400px] pointer-events-auto">
+                {/* Header */}
+                <div style={{ background: 'linear-gradient(180deg, #4a6fa5 0%, #3a5a8a 100%)', padding: '6px 12px', color: '#fff', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" strokeWidth="2.5" /></svg>
+                  Confirmar eliminación del Pedido
                 </div>
-                <h3 className="font-bold text-lg">¿Eliminar pedido?</h3>
-              </div>
-              <p className="text-sm text-base-content/60 mb-1">
-                Se eliminará <span className="font-semibold text-base-content">{form.numero_pedido || currentId}</span> con {puestos.length} puesto(s) de trabajo. Esta acción no se puede deshacer.
-              </p>
-              <div className="modal-action">
-                <button onClick={() => { deletePedidoRef.current?.close(); setDeleteModal(false) }} className="btn btn-ghost">Cancelar</button>
-                <button onClick={() => { confirmDelete(); deletePedidoRef.current?.close() }} className="btn btn-error">Eliminar</button>
+                {/* Body */}
+                <div style={{ background: '#f7f8fa', padding: '16px' }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#334155', margin: 0 }}>¿Desea eliminar este pedido por completo?</p>
+                  <p style={{ fontSize: 12, color: '#64748b', margin: '8px 0 0' }}>
+                    Se eliminará permanentemente el pedido <strong>{form.numero_pedido || currentId}</strong> con todos sus puestos de trabajo y artículos. Esta acción no se puede deshacer.
+                  </p>
+                </div>
+                {/* Footer */}
+                <div style={{ background: 'linear-gradient(180deg, #dfe6ed, #c8d1db)', borderTop: '1px solid #a0aec0', padding: '10px 12px', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                  <button onClick={() => { deletePedidoRef.current?.close(); setDeleteModal(false) }} className="ebs-btn">
+                    Cancelar
+                  </button>
+                  <button onClick={() => { confirmDelete(); deletePedidoRef.current?.close() }} className="ebs-btn ebs-btn-danger">
+                    Eliminar Pedido
+                  </button>
+                </div>
               </div>
             </div>
-            <form method="dialog" className="modal-backdrop"><button onClick={() => setDeleteModal(false)}>close</button></form>
           </dialog>
         </>
       )}

@@ -12,8 +12,8 @@ const COLUMNS = [
     { key: 'cantidad_unitaria', label: 'Unit.', w: 'w-[55px]  min-w-[55px]', qty: true, group: 'qty' },
     { key: 'cantidad_tipologia', label: 'Tipo.', w: 'w-[55px]  min-w-[55px]', qty: true, group: 'qty' },
     { key: 'cantidad_total', label: 'Total', w: 'w-[55px]  min-w-[55px]', qty: true, total: true, group: 'qty' },
-    { key: 'pintura', label: 'Pintura', w: 'w-[180px] min-w-[180px]', tipo: 'pintura', accent: 'emerald', group: 'mat' },
     { key: 'acabados_adicional', label: 'Acab. Adic.', w: 'w-[180px] min-w-[180px]', wrap: true, group: 'mat' },
+    { key: 'pintura', label: 'Pintura', w: 'w-[180px] min-w-[180px]', tipo: 'pintura', accent: 'emerald', group: 'mat' },
     { key: 'formica', label: 'Fórmica', w: 'w-[160px] min-w-[160px]', tipo: 'formica', accent: 'amber', group: 'mat' },
     { key: 'supercor', label: 'Supercor', w: 'w-[160px] min-w-[160px]', tipo: 'supercor', accent: 'cyan', group: 'mat' },
     { key: 'canto', label: 'Canto', w: 'w-[160px] min-w-[160px]', tipo: 'canto', accent: 'purple', group: 'mat' },
@@ -51,7 +51,8 @@ export default function ItemsTable({ items, onChange, onMaterialesChange, invali
     // Map: item _id → Set of material types from BOM
     const [materialesMap, setMaterialesMap] = useState({})
     const [scrollbarMeta, setScrollbarMeta] = useState({ show: false, thumbWidth: 0, thumbLeft: 0, canLeft: false, canRight: false })
-    const [deleteConfirm, setDeleteConfirm] = useState(null) // { idx, codigo }
+    const [deleteConfirm, setDeleteConfirm] = useState(null) // { idx, codigo, descripcion, batch, count }
+    const [selectedRows, setSelectedRows] = useState(new Set()) // Track selected row indices
     // Track which codes we've already loaded to avoid re-fetching
     const loadedCodesRef = useRef(new Set())
     const tableScrollRef = useRef(null)
@@ -124,6 +125,7 @@ export default function ItemsTable({ items, onChange, onMaterialesChange, invali
     useEffect(() => {
         const onMove = (e) => {
             if (!draggingRef.current.active) return
+            e.preventDefault() // Detener selección accidental de texto al arrastrar
             const container = tableScrollRef.current
             const track = scrollTrackRef.current
             if (!container || !track) return
@@ -157,6 +159,7 @@ export default function ItemsTable({ items, onChange, onMaterialesChange, invali
         const container = tableScrollRef.current
         const track = scrollTrackRef.current
         if (!container || !track) return
+        e.preventDefault() // Detener selección accidental de texto
         const rect = track.getBoundingClientRect()
         const clickX = e.clientX - rect.left
         const thumbCenter = scrollbarMeta.thumbWidth / 2
@@ -171,6 +174,7 @@ export default function ItemsTable({ items, onChange, onMaterialesChange, invali
 
     const onThumbMouseDown = (e) => {
         e.stopPropagation()
+        e.preventDefault() // Detener selección accidental de texto
         draggingRef.current = {
             active: true,
             startX: e.clientX,
@@ -278,16 +282,117 @@ export default function ItemsTable({ items, onChange, onMaterialesChange, invali
     }
 
     const addRow = () => onChange([...items, emptyItem()])
+
     const removeRow = (idx) => {
         if (items.length <= 1) return
         const item = items[idx]
-        setDeleteConfirm({ idx, codigo: item.codigo, descripcion: item.descripcion })
+        setDeleteConfirm({ idx, codigo: item.codigo, descripcion: item.descripcion, batch: false })
     }
+
+    const removeSelectedRows = () => {
+        if (selectedRows.size === 0) return
+        setDeleteConfirm({ batch: true, count: selectedRows.size })
+    }
+
+    const toggleRowSelection = (idx) => {
+        setSelectedRows(prev => {
+            const next = new Set(prev)
+            if (next.has(idx)) next.delete(idx)
+            else next.add(idx)
+            return next
+        })
+    }
+
+    const toggleAllSelection = () => {
+        if (selectedRows.size === items.length) {
+            setSelectedRows(new Set())
+        } else {
+            setSelectedRows(new Set(items.map((_, i) => i)))
+        }
+    }
+
     const confirmDelete = () => {
         if (!deleteConfirm) return
-        onChange(items.filter((_, i) => i !== deleteConfirm.idx))
+        if (deleteConfirm.batch) {
+            const remaining = items.filter((_, i) => !selectedRows.has(i))
+            onChange(remaining.length === 0 ? [emptyItem()] : remaining)
+            setSelectedRows(new Set())
+        } else {
+            onChange(items.filter((_, i) => i !== deleteConfirm.idx))
+            setSelectedRows(prev => {
+                const next = new Set()
+                for (const sel of prev) {
+                    if (sel < deleteConfirm.idx) next.add(sel)
+                    else if (sel > deleteConfirm.idx) next.add(sel - 1)
+                }
+                return next
+            })
+        }
         setDeleteConfirm(null)
     }
+
+    const handleNavigate = useCallback((currentRow, currentCol, direction) => {
+        const navigableCols = COLUMNS.map((c, i) => i).filter(i => {
+            const col = COLUMNS[i]
+            // Solo columnas que tienen inputs editables
+            return !col.search && !col.total
+        })
+
+        const getNextCoords = (r, c) => {
+            let nr = r
+            let nc = c
+            const colIdx = navigableCols.indexOf(c)
+
+            if (direction === 'ArrowUp') nr--
+            else if (direction === 'ArrowDown') nr++
+            else if (direction === 'ArrowLeft') {
+                if (colIdx > 0) nc = navigableCols[colIdx - 1]
+                else { nr--; nc = navigableCols[navigableCols.length - 1] }
+            }
+            else if (direction === 'ArrowRight') {
+                if (colIdx < navigableCols.length - 1) nc = navigableCols[colIdx + 1]
+                else { nr++; nc = navigableCols[0] }
+            }
+            return { nr, nc }
+        }
+
+        let curr = getNextCoords(currentRow, currentCol)
+
+        // Buscar recursivamente hasta encontrar un input que no esté deshabilitado
+        while (curr.nr >= 0 && curr.nr < items.length) {
+            const selector = `[data-row="${curr.nr}"][data-col="${curr.nc}"]`
+            const target = tableScrollRef.current?.querySelector(selector)
+
+            if (target && !target.disabled) {
+                target.focus()
+                if (target.select) target.select()
+                return
+            }
+
+            // Si no hay target o está deshabilitado, seguimos en la misma dirección
+            curr = getNextCoords(curr.nr, curr.nc)
+        }
+    }, [items.length])
+
+    const handleTableKeyDown = useCallback((e) => {
+        const { key } = e
+        if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) return
+
+        const target = e.target
+        const rowAttr = target.getAttribute('data-row')
+        const colAttr = target.getAttribute('data-col')
+
+        if (rowAttr === null || colAttr === null) return
+
+        const row = parseInt(rowAttr)
+        const col = parseInt(colAttr)
+
+        // Si es un textarea o input de texto, permitimos navegación con flechas 
+        // pero hay que tener cuidado con el cursor. En este sistema EBS, 
+        // priorizamos el movimiento entre celdas.
+        e.preventDefault()
+        handleNavigate(row, col, key)
+    }, [handleNavigate])
 
     return (
         <div>
@@ -298,6 +403,12 @@ export default function ItemsTable({ items, onChange, onMaterialesChange, invali
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#3a5a8a]/10 text-[#3a5a8a] font-bold">
                         {items.length}
                     </span>
+                    {selectedRows.size > 0 && (
+                        <button onClick={removeSelectedRows} className="ebs-btn flex items-center gap-1 ml-2 transition-transform active:scale-95" style={{ background: '#d94f4f', color: '#fff', border: '1px solid #922' }}>
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" strokeWidth="2" /></svg>
+                            Borrar {selectedRows.size} fila(s)
+                        </button>
+                    )}
                 </div>
                 <button onClick={addRow} className="ebs-btn flex items-center gap-1">
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" d="M12 5v14M5 12h14" strokeWidth="2.5" /></svg>
@@ -308,9 +419,9 @@ export default function ItemsTable({ items, onChange, onMaterialesChange, invali
             {/* Scrollable Table */}
             <div className="border border-gray-300 bg-white" style={{ borderRadius: '2px' }}>
                 <div ref={tableScrollRef} onScroll={syncFromTable} className="overflow-x-auto hide-horizontal-scrollbar">
-                    <table className="border-collapse" style={{ width: 'max-content', minWidth: '100%' }}>
+                    <table className="border-collapse" style={{ width: 'max-content', minWidth: '100%' }} onKeyDown={handleTableKeyDown}>
                         <thead>
-                            <tr className="bg-gradient-to-b from-[#e8ecf1] to-[#d8dde5] sticky top-0 z-20">
+                            <tr className="bg-gradient-to-b from-[#e8ecf1] to-[#d8dde5] sticky top-0 z-20 select-none">
                                 <th className="w-10 min-w-[40px] px-1 py-1.5 text-center text-[10px] font-bold uppercase tracking-wider text-gray-500 border-b border-gray-400">
                                     #
                                 </th>
@@ -329,8 +440,13 @@ export default function ItemsTable({ items, onChange, onMaterialesChange, invali
                                         </th>
                                     )
                                 })}
-                                <th className="w-8 min-w-[32px] border-b border-gray-400 border-l border-l-gray-400 text-center" title="Eliminar fila">
-                                    <svg className="w-3.5 h-3.5 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" strokeWidth="2" /></svg>
+                                <th className="w-8 min-w-[32px] px-1 py-1.5 border-b border-gray-400 border-l border-l-gray-400 text-center" title="Seleccionar todas">
+                                    <input
+                                        type="checkbox"
+                                        checked={items.length > 0 && selectedRows.size === items.length}
+                                        onChange={toggleAllSelection}
+                                        className="cursor-pointer rounded-sm border-gray-400"
+                                    />
                                 </th>
                             </tr>
                         </thead>
@@ -344,9 +460,9 @@ export default function ItemsTable({ items, onChange, onMaterialesChange, invali
                                 return (
                                     <tr
                                         key={itemId}
-                                        className={`group transition-colors duration-75 hover:bg-[#dbe4f0]/40 even:bg-gray-50/50 ${isInvalid ? '!bg-red-50' : ''}`}
+                                        className={`group transition-colors duration-75 hover:bg-[#dbe4f0]/40 even:bg-gray-50/50 ${isInvalid ? '!bg-red-50' : ''} ${selectedRows.has(idx) ? '!bg-[#dce4ef]' : ''}`}
                                     >
-                                        <td className="px-1 h-[34px] text-center text-[10px] text-gray-400 font-medium border-b border-gray-400">
+                                        <td className={`px-1 h-[34px] text-center text-[10px] select-none ${selectedRows.has(idx) ? 'text-[#3a5a8a] font-bold' : 'text-gray-400 font-medium'} border-b border-gray-400 border-l border-l-gray-400`}>
                                             {idx + 1}
                                         </td>
                                         {COLUMNS.map((col, ci) => {
@@ -379,6 +495,8 @@ export default function ItemsTable({ items, onChange, onMaterialesChange, invali
                                                             growCell
                                                             placeholder={isRequired ? '⬅ Requerido' : ''}
                                                             disabled={isBlocked}
+                                                            data-row={idx}
+                                                            data-col={ci}
                                                         />
                                                     ) : col.isCode ? (
                                                         <input
@@ -387,6 +505,8 @@ export default function ItemsTable({ items, onChange, onMaterialesChange, invali
                                                             onBlur={e => handleCodeLookup(idx, e.target.value)}
                                                             onKeyDown={e => { if (e.key === 'Enter') handleCodeLookup(idx, e.target.value) }}
                                                             placeholder="Código…"
+                                                            data-row={idx}
+                                                            data-col={ci}
                                                             className="cell-input w-full h-full bg-transparent border-0 px-2 text-[11px] text-gray-800 placeholder:text-gray-300 focus:outline-none"
                                                         />
                                                     ) : col.search ? (
@@ -400,6 +520,8 @@ export default function ItemsTable({ items, onChange, onMaterialesChange, invali
                                                         <input
                                                             value={item[col.key] || ''}
                                                             onChange={e => updateItem(idx, col.key, e.target.value)}
+                                                            data-row={idx}
+                                                            data-col={ci}
                                                             className="cell-input w-full h-full bg-transparent border-0 px-2 py-1 text-[11px] leading-4 text-gray-800 focus:outline-none"
                                                             style={{ minHeight: '34px' }}
                                                         />
@@ -408,6 +530,8 @@ export default function ItemsTable({ items, onChange, onMaterialesChange, invali
                                                             value={item[col.key] || ''}
                                                             onChange={e => updateItem(idx, col.key, e.target.value)}
                                                             rows={1}
+                                                            data-row={idx}
+                                                            data-col={ci}
                                                             className="cell-input w-full min-h-[34px] overflow-hidden bg-transparent border-0 px-2 py-1 text-[11px] leading-4 text-gray-800 focus:outline-none resize-none"
                                                         />
                                                     ) : (
@@ -416,24 +540,25 @@ export default function ItemsTable({ items, onChange, onMaterialesChange, invali
                                                             onChange={e => updateItem(idx, col.key, e.target.value)}
                                                             placeholder={col.qty ? '0' : ''}
                                                             disabled={col.total}
+                                                            data-row={idx}
+                                                            data-col={ci}
                                                             className={`cell-input w-full h-full bg-transparent border-0 px-2 py-1 text-[11px] leading-4 placeholder:text-gray-300 focus:outline-none
-                                                  ${col.qty ? 'text-right tabular-nums font-medium text-gray-600' : 'text-gray-800'}
-                                                  ${col.total ? 'text-[#3a5a8a] font-bold bg-gray-50/30 cursor-default' : ''}
-                                                  ${['nota_h', 'nota_l', 'nota_prof'].includes(col.key) ? 'text-red-600 font-medium' : ''}
-                                                `}
+                                                   ${col.qty ? 'text-right tabular-nums font-medium text-gray-600' : 'text-gray-800'}
+                                                   ${col.total ? 'text-[#3a5a8a] font-bold bg-gray-50/30 cursor-default' : ''}
+                                                   ${['nota_h', 'nota_l', 'nota_prof'].includes(col.key) ? 'text-red-600 font-medium' : ''}
+                                                 `}
                                                         />
                                                     )}
                                                 </td>
                                             )
                                         })}
                                         <td className="w-8 min-w-[32px] h-[34px] border-b border-gray-400 border-l border-l-gray-300 text-center">
-                                            <button
-                                                onClick={() => removeRow(idx)}
-                                                className="p-0.5 text-gray-400 hover:text-red-500 transition-colors"
-                                                title="Eliminar fila"
-                                            >
-                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" d="M6 18L18 6M6 6l12 12" strokeWidth="2" /></svg>
-                                            </button>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedRows.has(idx)}
+                                                onChange={() => toggleRowSelection(idx)}
+                                                className="cursor-pointer rounded-sm border-gray-400"
+                                            />
                                         </td>
                                     </tr>
                                 )
@@ -441,39 +566,39 @@ export default function ItemsTable({ items, onChange, onMaterialesChange, invali
                         </tbody>
                     </table>
                 </div>
-                <div className="h-[18px] border-t border-gray-300 bg-[#dce4ef] flex items-center px-[1px] gap-[1px]">
-                    <button
-                        type="button"
-                        onClick={() => scrollByStep(-1)}
-                        disabled={!scrollbarMeta.canLeft}
-                        className="w-[16px] h-[16px] border border-[#7a9cc6] bg-[#dce4ef] text-[10px] leading-none flex items-center justify-center disabled:opacity-50 text-[#3a5a8a]"
-                        title="Mover a la izquierda"
-                    >
-                        ◀
-                    </button>
-                    {scrollbarMeta.show && (
+                {scrollbarMeta.show && (
+                    <div className="h-[18px] border-t border-gray-300 bg-[#f1f5f9] flex items-center px-[1px] gap-[1px] select-none">
+                        <button
+                            type="button"
+                            onClick={() => scrollByStep(-1)}
+                            disabled={!scrollbarMeta.canLeft}
+                            className="w-[16px] h-[16px] border border-[#a0aec0] bg-[#e2e8f0] text-[10px] leading-none flex items-center justify-center disabled:opacity-30 text-[#3a5a8a] hover:bg-[#cbd5e1] transition-colors"
+                            title="Mover a la izquierda"
+                        >
+                            ◀
+                        </button>
                         <div
                             ref={scrollTrackRef}
                             onMouseDown={onTrackMouseDown}
-                            className="relative h-[16px] flex-1 border border-[#7a9cc6] bg-[repeating-linear-gradient(135deg,#e8eef4,#e8eef4_2px,#dce4ef_2px,#dce4ef_4px)] cursor-pointer"
+                            className="relative h-[16px] flex-1 border border-[#a0aec0] bg-[#f1f5f9] cursor-pointer"
                         >
                             <div
                                 onMouseDown={onThumbMouseDown}
-                                className="absolute top-0 h-[14px] mt-[1px] border border-[#4a7cc9] bg-[#7a9cc6] cursor-grab active:cursor-grabbing rounded-sm"
+                                className="absolute top-0 h-[14px] mt-[1px] border border-[#3a5a8a] bg-[#7a9cc6] hover:bg-[#4a7cc9] cursor-grab active:cursor-grabbing rounded-sm transition-colors"
                                 style={{ width: scrollbarMeta.thumbWidth, left: scrollbarMeta.thumbLeft }}
                             />
                         </div>
-                    )}
-                    <button
-                        type="button"
-                        onClick={() => scrollByStep(1)}
-                        disabled={!scrollbarMeta.canRight}
-                        className="w-[16px] h-[16px] border border-[#7a9cc6] bg-[#dce4ef] text-[10px] leading-none flex items-center justify-center disabled:opacity-50 text-[#3a5a8a]"
-                        title="Mover a la derecha"
-                    >
-                        ▶
-                    </button>
-                </div>
+                        <button
+                            type="button"
+                            onClick={() => scrollByStep(1)}
+                            disabled={!scrollbarMeta.canRight}
+                            className="w-[16px] h-[16px] border border-[#a0aec0] bg-[#e2e8f0] text-[10px] leading-none flex items-center justify-center disabled:opacity-30 text-[#3a5a8a] hover:bg-[#cbd5e1] transition-colors"
+                            title="Mover a la derecha"
+                        >
+                            ▶
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Delete confirmation modal - Oracle EBS style */}
@@ -500,14 +625,22 @@ export default function ItemsTable({ items, onChange, onMaterialesChange, invali
                         </div>
                         {/* Body */}
                         <div style={{ background: '#f7f8fa', padding: '16px 16px 12px' }}>
-                            <p style={{ fontSize: 12, color: '#334155', margin: 0 }}>
-                                ¿Está seguro de eliminar la <strong>fila {deleteConfirm.idx + 1}</strong>
-                                {deleteConfirm.codigo ? <> (Cód: <strong>{deleteConfirm.codigo}</strong>)</> : ''}?
-                            </p>
-                            {deleteConfirm.descripcion && (
-                                <p style={{ fontSize: 11, color: '#64748b', margin: '6px 0 0' }}>
-                                    {deleteConfirm.descripcion}
+                            {deleteConfirm.batch ? (
+                                <p style={{ fontSize: 12, color: '#334155', margin: 0 }}>
+                                    ¿Está seguro de eliminar las <strong>{deleteConfirm.count} filas</strong> seleccionadas? Esta acción no se puede deshacer.
                                 </p>
+                            ) : (
+                                <>
+                                    <p style={{ fontSize: 12, color: '#334155', margin: 0 }}>
+                                        ¿Está seguro de eliminar la <strong>fila {deleteConfirm.idx + 1}</strong>
+                                        {deleteConfirm.codigo ? <> (Cód: <strong>{deleteConfirm.codigo}</strong>)</> : ''}?
+                                    </p>
+                                    {deleteConfirm.descripcion && (
+                                        <p style={{ fontSize: 11, color: '#64748b', margin: '6px 0 0' }}>
+                                            {deleteConfirm.descripcion}
+                                        </p>
+                                    )}
+                                </>
                             )}
                         </div>
                         {/* Footer buttons */}

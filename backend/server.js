@@ -927,11 +927,11 @@ app.get('/api/pedidos/:id/export', authenticateToken, async (req, res) => {
         'CÓD.', 'DESCRIPCIÓN',
         'H', 'L', 'PROF', 'NOTAS',
         'UNI.', 'TIP.', 'TOTAL',
-        'PINTURA', 'ACAB. ADIC.', 'FÓRMICA',
+        'ACAB. ADIC.', 'PINTURA', 'FÓRMICA',
         'SUPERCOR', 'CANTO', 'MADECANTO',
         'VIDRIO', 'TELA / FIBER'
     ];
-    const colWidths = [14, 42, 8, 8, 8, 16, 8, 8, 9, 36, 20, 28, 24, 28, 24, 18, 34];
+    const colWidths = [14, 42, 8, 8, 8, 16, 8, 8, 9, 20, 36, 28, 24, 28, 24, 18, 34];
     colWidths.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
 
     // ═══════════════════════════════════════════════════════════════════
@@ -1077,7 +1077,7 @@ app.get('/api/pedidos/:id/export', authenticateToken, async (req, res) => {
                 item.codigo, item.descripcion,
                 item.nota_h, item.nota_l, item.nota_prof, item.nota_adicional,
                 item.cantidad_unitaria, item.cantidad_tipologia, item.cantidad_total,
-                item.pintura, item.acabados_adicional, item.formica,
+                item.acabados_adicional, item.pintura, item.formica,
                 item.supercor, item.canto, item.madecanto,
                 item.vidrio, item.tela
             ];

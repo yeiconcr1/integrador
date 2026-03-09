@@ -10,6 +10,8 @@ import UserAdmin from './components/UserAdmin'
 import DataMaintenance from './components/DataMaintenance'
 
 const today = new Date().toISOString().slice(0, 10)
+const generateId = () => window.crypto?.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36)
+
 function newForm(disenador = '') {
   return { numero_pedido: '', fecha: today, cliente: '', proyecto: '', disenador, asesor: '' }
 }
@@ -109,10 +111,10 @@ export default function App() {
       })
       setPuestos((data.puestos || []).map(p => ({
         ...p,
-        _id: p._id || p.id || crypto.randomUUID(),
+        _id: p._id || p.id || generateId(),
         items: (p.items || []).map(it => ({
           ...it,
-          _id: it._id || it.id || crypto.randomUUID()
+          _id: it._id || it.id || generateId()
         }))
       })))
       setCurrentId(id)
@@ -137,7 +139,7 @@ export default function App() {
       logout()
       setUser(null)
       // Usar setTimeout para evitar conflictos si show intenta actualizar el estado al mismo tiempo
-      setTimeout(() => show('Tu sesión expiró. Por favor, inicia sesión de nuevo.', 'error', crypto.randomUUID()), 50)
+      setTimeout(() => show('Tu sesión expiró. Por favor, inicia sesión de nuevo.', 'error', generateId()), 50)
     }
     window.addEventListener('unauthorized', handleUnauthorized)
     return () => window.removeEventListener('unauthorized', handleUnauthorized)
@@ -334,9 +336,9 @@ export default function App() {
   const duplicatePuesto = (idx) => {
     const source = puestos[idx]
     const dup = {
-      _id: crypto.randomUUID(),
+      _id: generateId(),
       nombre: `${String(source.nombre || '').toUpperCase()} (COPIA)`,
-      items: source.items.map(it => ({ ...it, _id: crypto.randomUUID() }))
+      items: source.items.map(it => ({ ...it, _id: generateId() }))
     }
     setPuestos(prev => [...prev.slice(0, idx + 1), dup, ...prev.slice(idx + 1)])
     show('Puesto duplicado', 'info')
@@ -384,21 +386,29 @@ export default function App() {
   }
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden" style={{ background: '#e8ecf1' }}>
+    <div className="flex flex-col h-screen overflow-hidden relative" style={{ background: '#e8ecf1' }}>
       <Toast toasts={toasts} onRemove={remove} />
 
       {/* ═══ ORACLE EBS GLOBAL HEADER ═══ */}
-      <header className="ebs-header flex items-center justify-between px-4 py-1.5 flex-shrink-0">
-        <div className="flex items-center gap-4">
-          <img src="/logo-carvajal.png" alt="Carvajal Espacios" className="h-8 brightness-0 invert opacity-90" />
-          <div className="h-5 w-px bg-white/20" />
-          <span className="text-[11px] font-semibold text-white/80 tracking-wide">INTEGRADOR DE PEDIDOS</span>
+      <header className="ebs-header flex flex-col sm:flex-row items-center justify-between px-2 sm:px-4 py-1.5 flex-shrink-0 gap-2 sm:gap-0">
+        <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto justify-between">
+          <div className="flex items-center gap-2">
+            <img src="/logo-carvajal.png" alt="Carvajal Espacios" className="h-8 brightness-0 invert opacity-90" />
+            <div className="h-5 w-px bg-white/20 hidden sm:block" />
+            <span className="text-[13px] sm:text-[11px] font-semibold text-white/80 tracking-wide whitespace-nowrap">INTEGRADOR DE PEDIDOS</span>
+          </div>
+          {/* Menú hamburguesa para móvil */}
+          <div className="sm:hidden flex items-center gap-2">
+            <button onClick={() => setSidebarOpen(o => !o)} className="text-white focus:outline-none p-1">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" strokeWidth="2" /></svg>
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-3 text-[10px] text-white/60">
-          <span className="font-semibold text-white/90">{user.nombre}</span>
-          <span>·</span>
-          <span className="text-emerald-300">{user.rol === 'admin' ? 'Administrador' : 'Diseñador'}</span>
-          <span>·</span>
+        <div className="flex items-center gap-2 sm:gap-3 text-[12px] sm:text-[10px] text-white/60 mt-1 sm:mt-0">
+          <span className="font-semibold text-white/90 truncate max-w-[100px] sm:max-w-none">{user.nombre}</span>
+          <span className="hidden sm:inline">·</span>
+          <span className="text-emerald-300 hidden sm:inline">{user.rol === 'admin' ? 'Administrador' : 'Diseñador'}</span>
+          <span className="hidden sm:inline">·</span>
           <button onClick={handleLogout} className="hover:text-white transition-colors underline decoration-white/30 underline-offset-2">Salir</button>
         </div>
       </header>
@@ -406,8 +416,8 @@ export default function App() {
       {currentView === 'usuarios' && (
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* ═══ ORACLE EBS TOOLBAR ═══ */}
-          <div className="ebs-toolbar flex items-center justify-between px-4 py-1 flex-shrink-0">
-            <div className="flex items-center gap-2">
+          <div className="ebs-toolbar flex items-center justify-between px-2 sm:px-4 py-1 flex-shrink-0 overflow-x-auto gap-2">
+            <div className="flex items-center gap-2 min-w-0 overflow-x-auto">
               <button onClick={() => setCurrentView('pedidos')} className="ebs-btn flex items-center gap-1">
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" strokeWidth="2" /></svg>
                 Volver a Pedidos
@@ -419,7 +429,7 @@ export default function App() {
           </div>
 
           {/* Main Content Area */}
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+          <div className="flex-1 overflow-y-auto p-2 sm:p-4 flex flex-col gap-3">
             <UserAdmin />
           </div>
         </div>
@@ -448,7 +458,7 @@ export default function App() {
       )}
 
       {currentView === 'pedidos' && (
-        <>
+        <div>
           {/* ═══ ORACLE EBS TOOLBAR ═══ */}
           <div className="ebs-toolbar flex items-center justify-between px-4 py-1 flex-shrink-0">
             <div className="flex items-center gap-2">
@@ -457,7 +467,6 @@ export default function App() {
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" d="M3 6h18M3 12h18M3 18h18" strokeWidth="2" /></svg>
                 Navegador
               </button>
-              <div className="h-4 w-px bg-gray-400" />
               <button onClick={newPedido} className="ebs-btn flex items-center gap-1">
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" d="M12 5v14M5 12h14" strokeWidth="2.5" /></svg>
                 Nuevo
@@ -494,7 +503,6 @@ export default function App() {
                   Eliminar
                 </button>
               )}
-              <div className="h-4 w-px bg-gray-400" />
               <button onClick={handleExport} className="ebs-btn ebs-btn-success flex items-center gap-1">
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" strokeWidth="2" /></svg>
                 Excel
@@ -575,7 +583,7 @@ export default function App() {
                     Información del Pedido
                   </div>
                   <div className="p-4">
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                       {[
                         { id: 'numero_pedido', label: 'N° Pedido', placeholder: 'Ej: 24219599', required: true },
                         { id: 'fecha', label: 'Fecha', type: 'date' },
@@ -611,7 +619,6 @@ export default function App() {
                 {/* ── ALL PUESTOS STACKED VERTICALLY ── */}
                 {puestos.map((puesto, idx) => (
                   <div key={puesto._id} className="ebs-form-region">
-
                     {/* Puesto Header — Oracle EBS region header */}
                     <div className="ebs-form-region-header flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -626,7 +633,6 @@ export default function App() {
                           {puesto.items.length} ítem{puesto.items.length !== 1 ? 's' : ''}
                         </span>
                       </div>
-
                       <div className="flex items-center gap-1">
                         <button onClick={() => duplicatePuesto(idx)}
                           className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium text-white/70 hover:text-white hover:bg-white/10 transition-colors"
@@ -643,7 +649,6 @@ export default function App() {
                         )}
                       </div>
                     </div>
-
                     {/* Puesto Table */}
                     <div className="p-3">
                       <ItemsTable
@@ -767,8 +772,9 @@ export default function App() {
               </div>
             </div>
           </dialog>
-        </>
+        </div>
       )}
+      {/* Control de zoom global eliminado, ahora solo en la barra superior */}
     </div>
   )
 }

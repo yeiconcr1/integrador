@@ -1,3 +1,10 @@
+// Polyfill para UUID v4 compatible con todos los entornos
+export function uuidv4() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8)
+        return v.toString(16)
+    })
+}
 const BASE = '/api'
 
 export function getToken() {
@@ -12,7 +19,10 @@ export function getUser() {
 export async function login(email, password) {
     const r = await fetch(`${BASE}/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            'Bypass-Tunnel-Reminder': 'true'
+        },
         body: JSON.stringify({ email, password })
     })
     const data = await r.json()
@@ -29,14 +39,20 @@ export function logout() {
 
 function authHeaders() {
     const token = getToken()
-    const headers = { 'Content-Type': 'application/json' }
+    const headers = {
+        'Content-Type': 'application/json',
+        'Bypass-Tunnel-Reminder': 'true'
+    }
     if (token) headers['Authorization'] = `Bearer ${token}`
     return headers
 }
 
 async function authFetch(url, options = {}) {
     const token = getToken()
-    const headers = { ...options.headers }
+    const headers = {
+        ...options.headers,
+        'Bypass-Tunnel-Reminder': 'true'
+    }
     if (token) headers['Authorization'] = `Bearer ${token}`
     const r = await fetch(url, { ...options, headers })
     if (r.status === 401 || r.status === 403) {
@@ -220,11 +236,13 @@ export async function downloadExcel(id) {
         const filename = match ? match[1] : `INTEGRADOR_${id}.xlsx`
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
+        a.href = url
         a.download = filename
         document.body.appendChild(a)
         a.click()
         a.remove()
-        window.URL.revokeObjectURL(url)
+        // Revocar el objeto URL después de un pequeño retraso para asegurar la descarga
+        setTimeout(() => URL.revokeObjectURL(url), 1000)
     } catch (err) {
         throw err
     }
@@ -279,7 +297,7 @@ export function isEmptyItem(it) {
 
 export function emptyItem() {
     return {
-        _id: crypto.randomUUID(),
+        _id: uuidv4(),
         codigo: '', descripcion: '',
         nota_h: '', nota_l: '', nota_prof: '', nota_adicional: '',
         cantidad_unitaria: '', cantidad_tipologia: 1, cantidad_total: '',
@@ -291,7 +309,7 @@ export function emptyItem() {
 
 export function emptyPuesto(num) {
     return {
-        _id: crypto.randomUUID(),
+        _id: uuidv4(),
         nombre: `Puesto de trabajo ${num}`,
         items: [emptyItem()],
     }

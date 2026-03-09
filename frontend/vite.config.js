@@ -8,7 +8,10 @@ export default defineConfig({
     tailwindcss(),
   ],
   server: {
+    host: true, // Permite conexiones externas (ngrok, LAN, etc)
     port: 5173,
+    strictPort: true,
+    allowedHosts: true,
     hmr: {
       overlay: true
     },

@@ -281,7 +281,23 @@ export default function ItemsTable({ items, onChange, onMaterialesChange, invali
         loadMateriales(itemId, code, idx, updatedItems)
     }
 
-    const addRow = () => onChange([...items, emptyItem()])
+    const addRow = () => {
+        onChange([...items, emptyItem()])
+        // El scroll se ajusta en el useEffect de abajo
+    }
+
+    // Auto-scroll al final cuando se agrega una fila
+    const prevItemsLength = useRef(items.length)
+    useEffect(() => {
+        if (items.length > prevItemsLength.current) {
+            // Se agregó una fila
+            const container = tableScrollRef.current
+            if (container) {
+                container.scrollTop = container.scrollHeight
+            }
+        }
+        prevItemsLength.current = items.length
+    }, [items.length])
 
     const removeRow = (idx) => {
         if (items.length <= 1) return
@@ -416,9 +432,14 @@ export default function ItemsTable({ items, onChange, onMaterialesChange, invali
                 </button>
             </div>
 
-            {/* Scrollable Table */}
-            <div className="border border-gray-300 bg-white" style={{ borderRadius: '2px' }}>
-                <div ref={tableScrollRef} onScroll={syncFromTable} className="overflow-x-auto hide-horizontal-scrollbar">
+                        {/* Scrollable Table */}
+                        <div className="border border-gray-300 bg-white overflow-hidden" style={{ borderRadius: '2px' }}>
+                                <div
+                                    ref={tableScrollRef}
+                                    onScroll={syncFromTable}
+                                      className="overflow-x-auto overflow-y-auto max-h-[60vh] hide-horizontal-scrollbar"
+                                      style={{ scrollbarWidth: 'auto' }}
+                                >
                     <table className="border-collapse" style={{ width: 'max-content', minWidth: '100%' }} onKeyDown={handleTableKeyDown}>
                         <thead>
                             <tr className="bg-gradient-to-b from-[#e8ecf1] to-[#d8dde5] sticky top-0 z-20 select-none">

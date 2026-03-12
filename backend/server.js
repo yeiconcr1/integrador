@@ -139,8 +139,8 @@ const adminCount = db.prepare('SELECT COUNT(*) as c FROM usuarios').get().c;
 if (adminCount === 0) {
     const hash = bcrypt.hashSync('admin123', 10);
     // use a generic email for admin
-    db.prepare('INSERT INTO usuarios (email, password, nombre, rol) VALUES (?, ?, ?, ?)').run('admin@omega.com', hash, 'Administrador del Sistema', 'admin');
-    console.log('✅ Default admin user created (admin@omega.com / admin123)');
+    db.prepare('INSERT INTO usuarios (email, password, nombre, rol) VALUES (?, ?, ?, ?)').run('admin@mepal.com.co', hash, 'Administrador del Sistema', 'admin');
+    console.log('✅ Default admin user created (admin@mepal.com.co / admin123)');
 }
 
 // migrate old table if still using username column
@@ -541,6 +541,55 @@ app.get('/api/articulos/:codigo/materiales', (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
+});
+
+// ─── API: VALIDACIÓN MASIVA CSV ───────────────────────────────────────────────
+// Recibe un array de códigos y retorna descripción + materiales BOM de cada uno
+app.post('/api/pedidos/validate-csv', authenticateToken, (req, res) => {
+    const { codes } = req.body;
+    if (!Array.isArray(codes)) return res.status(400).json({ error: 'Se requiere un array de códigos' });
+
+    const uniqueCodes = [...new Set(codes.map(c => String(c).trim()).filter(Boolean))];
+
+    const lookupDesc = db.prepare(
+        `SELECT codigo, descripcion FROM articulos_pt WHERE codigo = ?
+         UNION ALL
+         SELECT codigo, descripcion FROM articulos WHERE codigo = ?
+         LIMIT 1`
+    );
+    const lookupMats = db.prepare(
+        'SELECT tipo_material FROM bom_materiales WHERE codigo_producto = ?'
+    );
+
+    const results = {};
+    for (const code of uniqueCodes) {
+        const article = lookupDesc.get(code, code);
+        const mats = lookupMats.all(code).map(r => r.tipo_material);
+        results[code] = {
+            found: !!article,
+            descripcion: article ? article.descripcion : '',
+            materiales: mats,
+        };
+    }
+
+    res.json(results);
+});
+
+// Endpoint dedicated to downloading the template reliably across all browsers
+app.get('/api/pedidos/template-csv', (req, res) => {
+    const TEMPLATE_CSV = [
+        'puesto;codigo;nota_h;nota_l;nota_prof;nota_adicional;cantidad_unitaria;cantidad_tipologia;acabados_adicional;pintura;formica;supercor;canto;madecanto;vidrio;tela',
+        'PUESTO 1;CODIGO_EJEMPLO;100;60;45;;2;1;;RAL 9005;;;;;;',
+        'PUESTO 1;OTRO_CODIGO;80;40;;;1;3;;;FÓRMICA BLANCA;;;;;',
+        'PUESTO 2;TERCER_CODIGO;120;80;50;;4;2;;;;;;;TELA AZUL'
+    ].join('\n') + '\n';
+
+    // Add BOM for Excel UTF-8
+    const csvContent = '\uFEFF' + TEMPLATE_CSV;
+
+    res.setHeader('Content-Disposition', 'attachment; filename="plantilla_pedido.csv"');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.send(csvContent);
 });
 
 // ─── API: PEDIDOS ─────────────────────────────────────────────────────────────
@@ -1112,10 +1161,10 @@ app.get('/api/pedidos/:id/export', authenticateToken, async (req, res) => {
                     cell.font = descFont;
                     cell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
                 }
-                // Dimension notes (H, L, PROF) – center
+                // Dimension notes (H, L, PROF) – center, red text
                 if (i >= 2 && i <= 4) {
+                    cell.font = { ...normalFont, color: { argb: 'FFFF0000' }, bold: true };
                     cell.alignment = { horizontal: 'center', vertical: 'middle' };
-                    cell.numFmt = '#,##0';
                 }
                 // Notes – wrap
                 if (i === 5) {

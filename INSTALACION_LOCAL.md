@@ -110,7 +110,7 @@ http://localhost:5173
 
 | Campo | Valor |
 |-------|-------|
-| Email | `admin@omega.com` |
+| Email | `admin@mepal.com.co` |
 | Contraseña | `admin123` |
 
 > Estas credenciales se crean automáticamente la primera vez que arranca
@@ -122,7 +122,7 @@ http://localhost:5173
 El usuario `admin` es el único que se crea automáticamente. Para agregar
 más usuarios (diseñadores u otros administradores):
 
-1. Iniciar sesión con `admin@omega.com` / `admin123`
+1. Iniciar sesión con `admin@mepal.com.co` / `admin123`
 2. Ir al menú **Administración de usuarios** en la interfaz web
 3. Crear los usuarios con su email, contraseña y rol (`admin` o `disenador`)
 
@@ -219,7 +219,7 @@ Ejecutar todos desde la **raíz** del proyecto:
 3. cd frontend && npm install && cd ..
 4. Crear el archivo .env con JWT_SECRET
 5. npm run dev
-6. Abrir http://localhost:5173  →  login: admin@omega.com / admin123
+6. Abrir http://localhost:5173  →  login: admin@mepal.com.co / admin123
 7. npm run ingest               →  carga artículos y catálogos (listo sin archivos extra)
 8. Copiar LISTAS_TOT.csv a backend/data/ y ejecutar npm run ingest:bom  (opcional)
 ```

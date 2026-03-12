@@ -156,19 +156,27 @@ canto, vidrio, etc.) y los autocompletados del formulario quedarán funcionales.
 
 ### Datos que deben solicitarse al equipo
 
-El archivo `LISTAS_TOT.csv` pesa más de 100MB y no puede incluirse en el
-repositorio por limitaciones de GitHub. Este archivo es necesario para
-cargar los materiales BOM (qué materiales lleva cada producto).
+El archivo `LISTAS_TOT.csv` pesa más de 100MB y no puede estar directo en
+el repositorio, pero está incluido comprimido como `LISTAS_TOT.csv.zip`
+dentro de `backend/data/`. Hay que descomprimirlo antes de ejecutar la ingesta.
 
 **Pasos:**
-1. Solicitar el archivo `LISTAS_TOT.csv` al equipo y copiarlo en `backend/data/`
-2. Ejecutar:
+
+```bash
+# Descomprimir (Mac / Linux)
+unzip backend/data/LISTAS_TOT.csv.zip -d backend/data/
+
+# Descomprimir (Windows PowerShell)
+Expand-Archive backend\data\LISTAS_TOT.csv.zip -DestinationPath backend\data\
+```
+
+Luego ejecutar:
 
 ```bash
 npm run ingest:bom
 ```
 
-> Sin este archivo la aplicación funciona completamente. Solo la función
+> Sin este paso la aplicación funciona completamente. Solo la función
 > que muestra automáticamente los materiales de un producto al escribir
 > su código quedará sin datos.
 
@@ -184,7 +192,8 @@ integrador/
 │   │   ├── integrador.db      ← Base de datos SQLite (se crea sola al iniciar)
 │   │   ├── MP.txt             ← Materias primas (incluido en el repo)
 │   │   ├── PT.txt             ← Productos terminados (incluido en el repo)
-│   │   └── LISTAS_TOT.csv     ← BOM materiales (solicitar al equipo, no está en el repo)
+│   │   ├── LISTAS_TOT.csv.zip ← BOM materiales comprimido (incluido en el repo, descomprimir antes de ingest:bom)
+│   │   └── LISTAS_TOT.csv     ← Se genera al descomprimir el .zip (no está en el repo)
 │   └── scripts/               ← Scripts de carga y mantenimiento de datos
 ├── frontend/
 │   ├── src/                   ← Código React

@@ -432,14 +432,14 @@ export default function ItemsTable({ items, onChange, onMaterialesChange, invali
                 </button>
             </div>
 
-                        {/* Scrollable Table */}
-                        <div className="border border-gray-300 bg-white overflow-hidden" style={{ borderRadius: '2px' }}>
-                                <div
-                                    ref={tableScrollRef}
-                                    onScroll={syncFromTable}
-                                      className="overflow-x-auto overflow-y-auto max-h-[60vh] hide-horizontal-scrollbar"
-                                      style={{ scrollbarWidth: 'auto' }}
-                                >
+            {/* Scrollable Table */}
+            <div className="border border-gray-300 bg-white" style={{ borderRadius: '2px' }}>
+                <div
+                    ref={tableScrollRef}
+                    onScroll={syncFromTable}
+                    className="overflow-x-auto hide-horizontal-scrollbar"
+                    style={{ scrollbarWidth: 'auto' }}
+                >
                     <table className="border-collapse" style={{ width: 'max-content', minWidth: '100%' }} onKeyDown={handleTableKeyDown}>
                         <thead>
                             <tr className="bg-gradient-to-b from-[#e8ecf1] to-[#d8dde5] sticky top-0 z-20 select-none">

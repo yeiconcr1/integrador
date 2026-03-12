@@ -58,12 +58,15 @@ async function authFetch(url, options = {}) {
     if (r.status === 401 || r.status === 403) {
         logout()
         window.dispatchEvent(new Event('unauthorized'))
+        // Mark the response so callers can detect auth failure and skip their own error toasts
+        r._authFailed = true
     }
     return r
 }
 
 export async function apiFetch(url, options = {}) {
     const r = await authFetch(`${BASE}${url}`, options)
+    if (r._authFailed) return null
     const data = await r.json()
     if (!r.ok) throw new Error(data.error || 'Error en la petición')
     return data
@@ -71,12 +74,14 @@ export async function apiFetch(url, options = {}) {
 
 export async function fetchPedidos() {
     const r = await authFetch(`${BASE}/pedidos`)
+    if (r._authFailed) return []
     if (!r.ok) throw new Error('Error cargando pedidos')
     return r.json()
 }
 
 export async function fetchPedido(id) {
     const r = await authFetch(`${BASE}/pedidos/${id}`)
+    if (r._authFailed) return null
     if (!r.ok) throw new Error('Error cargando pedido')
     return r.json()
 }
@@ -87,6 +92,7 @@ export async function createPedido(data) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
     })
+    if (r._authFailed) return null
     if (!r.ok) {
         const body = await r.json().catch(() => null)
         throw new Error(body?.error || 'Error creando pedido')
@@ -100,6 +106,7 @@ export async function updatePedido(id, data) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
     })
+    if (r._authFailed) return null
     if (!r.ok) {
         const body = await r.json().catch(() => null)
         throw new Error(body?.error || 'Error actualizando pedido')
@@ -109,6 +116,7 @@ export async function updatePedido(id, data) {
 
 export async function deletePedido(id) {
     const r = await authFetch(`${BASE}/pedidos/${id}`, { method: 'DELETE' })
+    if (r._authFailed) return null
     if (!r.ok) throw new Error('Error eliminando pedido')
     return r.json()
 }
@@ -142,6 +150,18 @@ export async function fetchMateriales(code) {
         if (!r.ok) return []
         return r.json()
     } catch { return [] }
+}
+
+// ─── CSV BULK VALIDATION ────────────────────────────────────────────────────
+export async function validateCsvCodes(codes) {
+    const r = await authFetch(`${BASE}/pedidos/validate-csv`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ codes })
+    })
+    if (r._authFailed) return {}
+    if (!r.ok) throw new Error('Error validando códigos')
+    return r.json()
 }
 
 // ─── DATA MAINTENANCE HELPERS ───────────────────────────────────────────
@@ -217,6 +237,7 @@ export function uploadDataFile(file, expectedName) {
 
 export async function executeDataScript(scriptId) {
     const r = await authFetch(`${BASE}/admin/data/execute/${scriptId}`, { method: 'POST' });
+    if (r._authFailed) return null;
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || 'Error ejecutando script');
     return data;
@@ -225,6 +246,7 @@ export async function executeDataScript(scriptId) {
 export async function downloadExcel(id) {
     try {
         const r = await authFetch(`${BASE}/pedidos/${id}/export`)
+        if (r._authFailed) return
         if (!r.ok) {
             const text = await r.text()
             throw new Error(`Error exportando: ${text}`)
@@ -252,6 +274,7 @@ export async function downloadExcel(id) {
 
 export async function fetchUsuarios() {
     const r = await authFetch(`${BASE}/usuarios`)
+    if (r._authFailed) return []
     if (!r.ok) throw new Error('Error cargando usuarios')
     return r.json()
 }
@@ -262,6 +285,7 @@ export async function createUsuario(data) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     })
+    if (r._authFailed) return null
     const resValue = await r.json()
     if (!r.ok) throw new Error(resValue.error || 'Error creando usuario')
     return resValue
@@ -273,6 +297,7 @@ export async function updateUsuario(id, data) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     })
+    if (r._authFailed) return null
     const resValue = await r.json()
     if (!r.ok) throw new Error(resValue.error || 'Error actualizando usuario')
     return resValue
@@ -280,6 +305,7 @@ export async function updateUsuario(id, data) {
 
 export async function deleteUsuario(id) {
     const r = await authFetch(`${BASE}/usuarios/${id}`, { method: 'DELETE' })
+    if (r._authFailed) return null
     const resValue = await r.json()
     if (!r.ok) throw new Error(resValue.error || 'Error eliminando usuario')
     return resValue

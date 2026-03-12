@@ -1,0 +1,4 @@
+puesto,codigo,nota_h,nota_l,nota_prof,nota_adicional,cantidad_unitaria,cantidad_tipologia,pintura,formica,supercor,canto,madecanto,vidrio,tela,acabados_adicional
+PUESTO 1,CODIGO_EJEMPLO,100,60,45,,2,1,RAL 9005,,,,,,, 
+PUESTO 1,OTRO_CODIGO,80,40,,,1,3,,FÓRMICA BLANCA,,,,,, 
+PUESTO 2,TERCER_CODIGO,120,80,50,,4,2,,,,,,,TELA AZUL,

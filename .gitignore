@@ -19,6 +19,11 @@ Thumbs.db
 
 # Excel temp files
 ~$*
+backend/test_export.xlsx
+
+# Logs
+server_run.log
+*.log
 
 # Build output
 client/dist/

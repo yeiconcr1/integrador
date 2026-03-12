@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   fetchPedidos, fetchPedido, createPedido, updatePedido, deletePedido,
-  downloadExcel, emptyItem, emptyPuesto, getUser, logout, isEmptyItem
+  downloadExcel, emptyItem, emptyPuesto, getUser, logout, isEmptyItem, uuidv4
 } from './api'
 import ItemsTable from './components/ItemsTable'
 import Toast, { useToast } from './components/Toast'
 import Login from './components/Login'
 import UserAdmin from './components/UserAdmin'
 import DataMaintenance from './components/DataMaintenance'
+import CsvUpload from './components/CsvUpload'
 
 const today = new Date().toISOString().slice(0, 10)
 const generateId = () => window.crypto?.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2) + Date.now().toString(36)
@@ -77,6 +78,7 @@ export default function App() {
   const [headerErrors, setHeaderErrors] = useState({}) // field → error message
   const [savedSnapshot, setSavedSnapshot] = useState(null) // snapshot after save/load
   const [invalidCells, setInvalidCells] = useState(new Set()) // set of 'puestoIdx-itemIdx' keys
+  const [showCsvUpload, setShowCsvUpload] = useState(false)
   const { toasts, show, remove } = useToast()
   const deletePedidoRef = useRef(null)
   const deletePuestoRef = useRef(null)
@@ -101,6 +103,7 @@ export default function App() {
   const loadPedido = useCallback(async (id) => {
     try {
       const data = await fetchPedido(id)
+      if (!data) return // Auth failure handled by unauthorized event
       setForm({
         numero_pedido: data.numero_pedido || '',
         fecha: data.fecha || today,
@@ -314,6 +317,26 @@ export default function App() {
     }
   }
 
+  const handleCsvImport = (csvPuestos) => {
+    // Convert CSV puesto data into the app's puestos format with _ids
+    const newPuestos = csvPuestos.map(p => ({
+      _id: uuidv4(),
+      nombre: p.nombre,
+      items: p.items.map(it => ({
+        ...emptyItem(),
+        ...it,
+        _id: uuidv4(),
+      }))
+    }))
+    // Reset the form to a new pedido with the imported puestos
+    setCurrentId(null)
+    setForm(newForm(user?.nombre || ''))
+    setPuestos(newPuestos)
+    setHeaderErrors({})
+    setInvalidCells(new Set())
+    setSavedSnapshot(null)
+  }
+
   // ─── Puestos management ───
   const addPuesto = () => {
     setPuestos(prev => [...prev, { ...emptyPuesto(prev.length + 1), nombre: `PUESTO ${prev.length + 1}` }])
@@ -458,7 +481,7 @@ export default function App() {
       )}
 
       {currentView === 'pedidos' && (
-        <div>
+        <div className="flex-1 flex flex-col min-w-0 min-h-0">
           {/* ═══ ORACLE EBS TOOLBAR ═══ */}
           <div className="ebs-toolbar flex items-center justify-between px-4 py-1 flex-shrink-0">
             <div className="flex items-center gap-2">
@@ -503,6 +526,10 @@ export default function App() {
                   Eliminar
                 </button>
               )}
+              <button onClick={() => setShowCsvUpload(true)} className="ebs-btn flex items-center gap-1" style={{ color: '#3a5a8a' }}>
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" strokeWidth="2" /></svg>
+                CSV
+              </button>
               <button onClick={handleExport} className="ebs-btn ebs-btn-success flex items-center gap-1">
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" strokeWidth="2" /></svg>
                 Excel
@@ -571,10 +598,10 @@ export default function App() {
             </aside>
 
             {/* ─── MAIN CONTENT ─── */}
-            <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <div className="flex-1 flex flex-col min-w-0 min-h-0">
 
               {/* Scrollable Content — puestos stacked vertically */}
-              <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+              <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 flex flex-col gap-3">
 
                 {/* Header Card — Oracle EBS Form Region */}
                 <div className="ebs-form-region">
@@ -772,6 +799,15 @@ export default function App() {
               </div>
             </div>
           </dialog>
+
+          {/* ── CSV Upload Modal ── */}
+          {showCsvUpload && (
+            <CsvUpload
+              onImport={handleCsvImport}
+              onClose={() => setShowCsvUpload(false)}
+              showToast={show}
+            />
+          )}
         </div>
       )}
       {/* Control de zoom global eliminado, ahora solo en la barra superior */}

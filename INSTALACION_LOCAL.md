@@ -115,6 +115,23 @@ http://localhost:5173
 
 > Estas credenciales se crean automáticamente la primera vez que arranca
 > el servidor si no existe ningún usuario en la base de datos.
+> No es necesario crearlas manualmente ni tocar la base de datos.
+
+### Crear usuarios adicionales
+
+El usuario `admin` es el único que se crea automáticamente. Para agregar
+más usuarios (diseñadores u otros administradores):
+
+1. Iniciar sesión con `admin@omega.com` / `admin123`
+2. Ir al menú **Administración de usuarios** en la interfaz web
+3. Crear los usuarios con su email, contraseña y rol (`admin` o `disenador`)
+
+Los roles tienen el siguiente acceso:
+
+| Rol | Acceso |
+|-----|--------|
+| `admin` | Ve y edita todos los pedidos, gestiona usuarios, accede al panel de mantenimiento de datos |
+| `disenador` | Solo ve y edita sus propios pedidos |
 
 ---
 

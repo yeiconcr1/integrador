@@ -18,9 +18,32 @@ const fs = require('fs');
 const readline = require('readline');
 const Database = require('better-sqlite3');
 const path = require('path');
+const { execSync } = require('child_process');
+const os = require('os');
 
-const DB_PATH = path.join(__dirname, '..', 'data', 'integrador.db');
+const DB_PATH  = path.join(__dirname, '..', 'data', 'integrador.db');
 const CSV_PATH = path.join(__dirname, '..', 'data', 'LISTAS_TOT.csv');
+const ZIP_PATH = CSV_PATH + '.zip';
+
+// Auto-descomprimir el zip si el CSV no existe todavía
+if (!fs.existsSync(CSV_PATH)) {
+    if (!fs.existsSync(ZIP_PATH)) {
+        console.error('❌ No se encontró LISTAS_TOT.csv ni LISTAS_TOT.csv.zip en backend/data/');
+        process.exit(1);
+    }
+    console.log('📦 Descomprimiendo LISTAS_TOT.csv.zip...');
+    try {
+        if (os.platform() === 'win32') {
+            execSync(`powershell -command "Expand-Archive -Path '${ZIP_PATH}' -DestinationPath '${path.dirname(ZIP_PATH)}' -Force"`, { stdio: 'inherit' });
+        } else {
+            execSync(`unzip -o "${ZIP_PATH}" -d "${path.dirname(ZIP_PATH)}"`, { stdio: 'inherit' });
+        }
+        console.log('✅ Descompresión completada.');
+    } catch (err) {
+        console.error('❌ Error al descomprimir:', err.message);
+        process.exit(1);
+    }
+}
 
 // ── Mapeo: prefijo de descripción genérica → tipo de material del integrador ──
 const MATERIAL_MAP = [

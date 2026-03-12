@@ -142,43 +142,20 @@ los campos de autocompletado estarán vacíos hasta cargar los datos.
 
 Hay dos tipos de datos con situaciones distintas:
 
-### Datos incluidos en el repositorio (listos para cargar)
-
-Los archivos `MP.txt` (materias primas) y `PT.txt` (productos terminados)
-ya están en el repositorio dentro de `backend/data/`. Para cargarlos:
+Todos los archivos de datos necesarios ya están en el repositorio.
+Ejecutar el siguiente comando único desde la raíz del proyecto:
 
 ```bash
-npm run ingest
+npm run data:all
 ```
 
-Esto llena las tablas de artículos y catálogos (pintura, fórmica, tela,
-canto, vidrio, etc.) y los autocompletados del formulario quedarán funcionales.
+Este comando hace automáticamente en orden:
 
-### Datos que deben solicitarse al equipo
+1. Carga `MP.txt` y `PT.txt` → llena artículos y catálogos (pintura, fórmica, tela, canto, vidrio, etc.)
+2. Descomprime `LISTAS_TOT.csv.zip` → genera `LISTAS_TOT.csv` en `backend/data/` si aún no existe
+3. Procesa `LISTAS_TOT.csv` → llena los materiales BOM de cada producto
 
-El archivo `LISTAS_TOT.csv` pesa más de 100MB y no puede estar directo en
-el repositorio, pero está incluido comprimido como `LISTAS_TOT.csv.zip`
-dentro de `backend/data/`. Hay que descomprimirlo antes de ejecutar la ingesta.
-
-**Pasos:**
-
-```bash
-# Descomprimir (Mac / Linux)
-unzip backend/data/LISTAS_TOT.csv.zip -d backend/data/
-
-# Descomprimir (Windows PowerShell)
-Expand-Archive backend\data\LISTAS_TOT.csv.zip -DestinationPath backend\data\
-```
-
-Luego ejecutar:
-
-```bash
-npm run ingest:bom
-```
-
-> Sin este paso la aplicación funciona completamente. Solo la función
-> que muestra automáticamente los materiales de un producto al escribir
-> su código quedará sin datos.
+> No es necesario descomprimir nada manualmente. El script lo hace solo.
 
 ---
 
@@ -229,8 +206,7 @@ Ejecutar todos desde la **raíz** del proyecto:
 4. Crear el archivo .env con JWT_SECRET
 5. npm run dev
 6. Abrir http://localhost:5173  →  login: admin@mepal.com.co / admin123
-7. npm run ingest               →  carga artículos y catálogos (listo sin archivos extra)
-8. Copiar LISTAS_TOT.csv a backend/data/ y ejecutar npm run ingest:bom  (opcional)
+7. npm run data:all             →  descomprime zip, carga artículos, catálogos y materiales BOM
 ```
 
 ---

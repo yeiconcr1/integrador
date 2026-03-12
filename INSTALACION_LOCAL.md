@@ -51,14 +51,20 @@ cd ..
 
 ## Paso 3 — Configurar variables de entorno
 
-En la raíz del proyecto existe un archivo `.env`. Si no está, créalo:
+El archivo `.env` NO está en el repositorio por seguridad. Hay que crearlo
+manualmente en la raíz del proyecto (donde está el `package.json`):
 
+**Mac / Linux:**
 ```bash
-# En la raíz del proyecto (junto a package.json)
-touch .env
+echo "JWT_SECRET=integrador_super_secret_key_123" > .env
 ```
 
-Agregar el siguiente contenido:
+**Windows (CMD):**
+```cmd
+echo JWT_SECRET=integrador_super_secret_key_123 > .env
+```
+
+O crearlo manualmente con cualquier editor de texto con este contenido:
 
 ```env
 JWT_SECRET=integrador_super_secret_key_123
@@ -85,6 +91,11 @@ Este comando levanta simultáneamente:
 El frontend redirige automáticamente las llamadas `/api` al backend,
 por lo que no es necesario hacer ninguna otra configuración.
 
+> **Nota sobre la base de datos**: NO es necesario crear ni configurar
+> ninguna base de datos manualmente. Al iniciar el servidor por primera
+> vez se crea automáticamente el archivo `backend/data/integrador.db`
+> con todas las tablas listas.
+
 ---
 
 ## Paso 5 — Abrir la aplicación
@@ -107,22 +118,63 @@ http://localhost:5173
 
 ---
 
+## Paso 6 — Cargar los datos iniciales
+
+La aplicación funciona desde el inicio (login, crear pedidos, etc.), pero
+los campos de autocompletado estarán vacíos hasta cargar los datos.
+
+Hay dos tipos de datos con situaciones distintas:
+
+### Datos incluidos en el repositorio (listos para cargar)
+
+Los archivos `MP.txt` (materias primas) y `PT.txt` (productos terminados)
+ya están en el repositorio dentro de `backend/data/`. Para cargarlos:
+
+```bash
+npm run ingest
+```
+
+Esto llena las tablas de artículos y catálogos (pintura, fórmica, tela,
+canto, vidrio, etc.) y los autocompletados del formulario quedarán funcionales.
+
+### Datos que deben solicitarse al equipo
+
+El archivo `LISTAS_TOT.csv` pesa más de 100MB y no puede incluirse en el
+repositorio por limitaciones de GitHub. Este archivo es necesario para
+cargar los materiales BOM (qué materiales lleva cada producto).
+
+**Pasos:**
+1. Solicitar el archivo `LISTAS_TOT.csv` al equipo y copiarlo en `backend/data/`
+2. Ejecutar:
+
+```bash
+npm run ingest:bom
+```
+
+> Sin este archivo la aplicación funciona completamente. Solo la función
+> que muestra automáticamente los materiales de un producto al escribir
+> su código quedará sin datos.
+
+---
+
 ## Estructura del proyecto
 
 ```
 integrador/
 ├── backend/
-│   ├── server.js           ← API REST (Node.js + Express)
+│   ├── server.js              ← API REST (Node.js + Express)
 │   ├── data/
-│   │   ├── integrador.db   ← Base de datos SQLite (se crea sola al iniciar)
-│   │   └── *.csv / *.txt   ← Archivos de datos para ingesta
-│   └── scripts/            ← Scripts de carga y mantenimiento de datos
+│   │   ├── integrador.db      ← Base de datos SQLite (se crea sola al iniciar)
+│   │   ├── MP.txt             ← Materias primas (incluido en el repo)
+│   │   ├── PT.txt             ← Productos terminados (incluido en el repo)
+│   │   └── LISTAS_TOT.csv     ← BOM materiales (solicitar al equipo, no está en el repo)
+│   └── scripts/               ← Scripts de carga y mantenimiento de datos
 ├── frontend/
-│   ├── src/                ← Código React
-│   └── public/             ← Archivos estáticos
-├── package.json            ← Scripts principales y dependencias del backend
-├── .env                    ← Variables de entorno (NO subir al repositorio)
-└── INSTALACION_LOCAL.md    ← Este archivo
+│   ├── src/                   ← Código React
+│   └── public/                ← Archivos estáticos
+├── package.json               ← Scripts principales y dependencias del backend
+├── .env                       ← Variables de entorno (crear manualmente, ver Paso 3)
+└── INSTALACION_LOCAL.md       ← Este archivo
 ```
 
 ---
@@ -136,31 +188,24 @@ Ejecutar todos desde la **raíz** del proyecto:
 | `npm run dev` | Levanta backend y frontend juntos (modo desarrollo) |
 | `npm start` | Levanta solo el backend (modo producción) |
 | `npm run build` | Genera el build del frontend para producción |
-| `npm run ingest` | Carga catálogos y artículos desde los archivos CSV/TXT en `backend/data/` |
-| `npm run ingest:bom` | Carga los materiales BOM desde los archivos de datos |
+| `npm run ingest` | Carga artículos y catálogos desde `MP.txt` y `PT.txt` |
+| `npm run ingest:bom` | Carga materiales BOM desde `LISTAS_TOT.csv` (solicitar al equipo) |
 | `npm run data:all` | Ejecuta `ingest` e `ingest:bom` en secuencia |
 
 ---
 
-## Cargar datos iniciales (catálogos y artículos)
+## Resumen del orden de pasos
 
-Si la base de datos está vacía y los autocompletados no muestran datos,
-hay que ejecutar la ingesta. Para eso primero deben existir los archivos
-de datos en `backend/data/`:
-
-- `LISTAS_TOT.csv` — catálogos (pintura, fórmica, tela, etc.)
-- `MP.txt` — materias primas
-- `PT.txt` — productos terminados
-- `BOMS_indentados.csv` — materiales BOM
-
-Una vez que los archivos estén en esa carpeta:
-
-```bash
-npm run data:all
 ```
-
-También se puede hacer desde la interfaz web iniciando sesión como
-`admin` y entrando al panel de **Mantenimiento de datos**.
+1. git clone ...
+2. npm install
+3. cd frontend && npm install && cd ..
+4. Crear el archivo .env con JWT_SECRET
+5. npm run dev
+6. Abrir http://localhost:5173  →  login: admin@omega.com / admin123
+7. npm run ingest               →  carga artículos y catálogos (listo sin archivos extra)
+8. Copiar LISTAS_TOT.csv a backend/data/ y ejecutar npm run ingest:bom  (opcional)
+```
 
 ---
 
@@ -169,9 +214,8 @@ También se puede hacer desde la interfaz web iniciando sesión como
 **El puerto 3000 ya está en uso**
 
 ```bash
-# Mac / Linux — ver qué proceso usa el puerto
+# Mac / Linux
 lsof -i :3000
-# Terminar el proceso
 kill -9 <PID>
 ```
 
@@ -181,38 +225,45 @@ netstat -ano | findstr :3000
 taskkill /PID <PID> /F
 ```
 
-**El puerto 5173 ya está en uso**
+**El puerto 5173 ya está en uso** — igual que arriba con el puerto 5173.
 
-Igual que arriba pero con el puerto 5173.
+---
 
 **Error: `better-sqlite3` no compila**
 
-Asegurarse de que Node.js y las build tools están instaladas:
+Este error ocurre cuando faltan las herramientas de compilación de C++
+que necesita la librería de base de datos.
 
 ```bash
 # Mac
 xcode-select --install
 
-# Windows — instalar windows-build-tools
-npm install --global windows-build-tools
-
 # Linux (Debian/Ubuntu)
 sudo apt-get install build-essential python3
+
+# Windows — abrir PowerShell como administrador
+npm install --global windows-build-tools
 ```
 
-Luego volver a instalar:
+Luego volver a instalar desde la raíz:
 
 ```bash
 npm install
 ```
 
-**La base de datos aparece vacía o con error al iniciar**
+---
 
-Verificar que existe la carpeta `backend/data/`. Si no existe, crearla:
+**No aparece el archivo `.env` y el servidor no arranca**
+
+El archivo `.env` no está en el repositorio. Crearlo manualmente
+siguiendo el Paso 3 de esta guía.
+
+---
+
+**La carpeta `backend/data/` no existe**
 
 ```bash
 mkdir -p backend/data
 ```
 
-El archivo `integrador.db` se crea automáticamente al iniciar el servidor
-por primera vez.
+El archivo `integrador.db` se crea automáticamente al iniciar el servidor.
